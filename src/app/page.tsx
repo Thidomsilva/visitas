@@ -18,7 +18,7 @@ import { generateSchedule } from "@/lib/scheduler";
 type FilterType = "all" | VisitStatus;
 
 export default function DashboardPage() {
-  const [clients, setClients] = useState<Client[]>(initialClients);
+  const [clients, setClients] = useState<Client[]>(() => generateSchedule(initialClients));
   const [filter, setFilter] = useState<FilterType>("all");
   const [isMounted, setIsMounted] = useState(false);
   const [isAddClientOpen, setAddClientOpen] = useState(false);
@@ -50,9 +50,6 @@ export default function DashboardPage() {
   
   useEffect(() => {
     setIsMounted(true);
-    // Generate the initial schedule for all clients
-    const scheduledClients = generateSchedule(clients);
-    setClients(scheduledClients);
   }, []);
 
   useEffect(() => {
