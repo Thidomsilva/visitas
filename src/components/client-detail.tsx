@@ -7,12 +7,13 @@ import { ptBR } from 'date-fns/locale';
 import { StatusBadge } from "./status-badge";
 import { getVisitStatus } from "@/lib/utils";
 import { Button } from "./ui/button";
-import { PlusCircle, Trash2, AlertTriangle, User } from "lucide-react";
+import { PlusCircle, Trash2, AlertTriangle, User, History, Save } from "lucide-react";
 import { VisitHistoryDialog } from "./visit-history-dialog";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { VisitLogDialog } from "./visit-log-dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { Badge } from "./ui/badge";
+import { Textarea } from "./ui/textarea";
 
 interface ClientDetailProps {
   client: Client | null;
@@ -20,6 +21,64 @@ interface ClientDetailProps {
   onDeleteClient: (clientId: string) => void;
   onToggleCriticalStatus: (clientId: string) => void;
 }
+
+function UpcomingVisitItem({ visit, onRegister, client }: { visit: Visit, onRegister: (visitData: Omit<Visit, 'id' | 'date' | 'registeredBy'>) => void, client: Client }) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [feedback, setFeedback] = useState('');
+    const [followUp, setFollowUp] = useState('');
+
+    const handleRegister = () => {
+        if (!feedback || !followUp) {
+            alert("Por favor, preencha os campos de feedback e plano de ação.");
+            return;
+        }
+        onRegister({ feedback, followUp });
+        setIsEditing(false);
+        setFeedback('');
+        setFollowUp('');
+    }
+
+    if (!isEditing) {
+        return (
+            <div className="p-4 border rounded-lg flex justify-between items-center">
+                <div>
+                    <p className="font-semibold">{format(visit.date, 'PPP', { locale: ptBR })}</p>
+                    <p className="text-muted-foreground mt-1 text-sm">{visit.feedback}</p>
+                </div>
+                <Button onClick={() => setIsEditing(true)}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Registrar
+                </Button>
+            </div>
+        )
+    }
+
+    return (
+         <div className="p-4 border rounded-lg space-y-4">
+             <p className="font-semibold">{format(visit.date, 'PPP', { locale: ptBR })}</p>
+            <Textarea 
+                placeholder="Feedback / Resumo da visita..."
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                rows={3}
+            />
+            <Textarea
+                placeholder="Ações de Acompanhamento / Próximos passos..."
+                value={followUp}
+                onChange={(e) => setFollowUp(e.target.value)}
+                rows={3}
+            />
+            <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                <Button onClick={handleRegister}>
+                    <Save className="mr-2 h-4 w-4"/>
+                    Salvar Visita
+                </Button>
+            </div>
+        </div>
+    )
+}
+
 
 export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCriticalStatus }: ClientDetailProps) {
   const [logDialogOpen, setLogDialogOpen] = useState(false);
@@ -39,7 +98,25 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
   }
 
   const status = getVisitStatus(client.nextVisitDate);
-  const sortedVisits = [...client.visits].sort((a, b) => b.date.getTime() - a.date.getTime());
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  
+  const futureVisits = useMemo(() => 
+    [...client.visits]
+        .filter(v => v.date >= today)
+        .sort((a,b) => a.date.getTime() - b.date.getTime())
+  , [client.visits]);
+
+
+  const handleQuickRegister = (visitData: Omit<Visit, 'id' | 'date' | 'registeredBy'>) => {
+      const newVisit: Visit = {
+        id: crypto.randomUUID(),
+        date: new Date(), // The visit happens now
+        ...visitData,
+        registeredBy: client.responsavel,
+      };
+      onVisitLogged(client.id, newVisit);
+  }
 
   return (
     <Card className="flex-1">
@@ -104,30 +181,28 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
             </div>
         </div>
         <div>
-            <h4 className="text-lg font-semibold mb-2">Histórico Recente</h4>
-            {sortedVisits.length > 0 ? (
+            <div className="flex items-center justify-between mb-2">
+                <h4 className="text-lg font-semibold">Próximas Visitas</h4>
+                <Button variant="link" onClick={() => setHistoryDialogOpen(true)}>
+                    <History className="mr-2 h-4 w-4"/>
+                    Ver histórico completo
+                </Button>
+            </div>
+            {futureVisits.length > 0 ? (
                 <div className="space-y-4">
-                    {sortedVisits.slice(0, 2).map(visit => (
-                        <div key={visit.id} className="p-4 border rounded-lg">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="font-semibold">{format(visit.date, 'PPP', { locale: ptBR })}</p>
-                                    <p className="text-muted-foreground mt-1 text-sm">{visit.feedback}</p>
-                                </div>
-                                <div className="flex items-center text-xs text-muted-foreground gap-1.5 pt-1">
-                                    <User className="h-3 w-3" />
-                                    <span>{visit.registeredBy}</span>
-                                </div>
-                            </div>
-                        </div>
+                    {futureVisits.slice(0, 2).map(visit => (
+                        <UpcomingVisitItem
+                            key={visit.id}
+                            visit={visit}
+                            client={client}
+                            onRegister={handleQuickRegister}
+                        />
                     ))}
-                     {sortedVisits.length > 2 && (
-                         <Button variant="link" onClick={() => setHistoryDialogOpen(true)}>Ver histórico completo</Button>
-                     )}
                 </div>
             ): (
                 <div className="text-center text-muted-foreground py-8 border rounded-lg">
-                    <p>Nenhuma visita registrada ainda.</p>
+                    <p>Nenhuma visita futura agendada.</p>
+                     <Button variant="link" className="mt-2" onClick={() => setLogDialogOpen(true)}>Registrar uma visita agora?</Button>
                 </div>
             )}
         </div>
