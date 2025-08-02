@@ -40,12 +40,13 @@ function deserializeClient(client: Client): Client {
   const toDate = (timestamp: any) => timestamp instanceof Timestamp ? timestamp.toDate() : (timestamp ? new Date(timestamp) : null);
   return {
     ...client,
-    lastVisitDate: toDate(client.lastVisitDate),
+    lastVisitDate: client.lastVisitDate, // Keep as Timestamp or null
     nextVisitDate: toDate(client.nextVisitDate),
-    createdAt: toDate(client.createdAt),
+    createdAt: client.createdAt, // Keep as Timestamp
     visits: client.visits.map(v => ({ ...v, date: toDate(v.date) })),
   };
 }
+
 
 const calculateNextVisitDate = (lastVisit: Date, classification: ClientClassification, isCritical?: boolean): Date => {
     const criticalInterval = { min: 7, max: 7 };
@@ -238,7 +239,7 @@ function DashboardPageContent() {
     if (!client) return;
 
     const newVisit = { ...visit, date: Timestamp.fromDate(visit.date as Date) };
-    const updatedVisits = [newVisit, ...client.visits.map(v => ({...v, date: Timestamp.fromDate(v.date as Date)}))].sort((a,b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
+    const updatedVisits = [newVisit, ...client.visits.map(v => ({...v, date: Timestamp.fromMillis((v.date as Date).getTime())}))].sort((a,b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
     
     const nextVisitDate = calculateNextVisitDate(visit.date as Date, client.classification, client.isCritical);
 
@@ -291,7 +292,6 @@ function DashboardPageContent() {
     if (!client) return;
 
     const newCriticalStatus = !client.isCritical;
-    
     let dateToCalculateFrom: Date;
 
     if (newCriticalStatus) {
@@ -299,7 +299,15 @@ function DashboardPageContent() {
       dateToCalculateFrom = new Date();
     } else {
       // Ao deixar de ser crítico, recalcula a partir da última visita ou da criação
-      dateToCalculateFrom = client.lastVisitDate ? (client.lastVisitDate as Date) : (client.createdAt as Date);
+      const lastVisit = client.lastVisitDate instanceof Timestamp 
+        ? client.lastVisitDate.toDate() 
+        : client.lastVisitDate;
+
+      const createdAt = client.createdAt instanceof Timestamp 
+        ? client.createdAt.toDate() 
+        : client.createdAt;
+
+      dateToCalculateFrom = lastVisit ? lastVisit : createdAt;
     }
 
     const nextVisitDate = calculateNextVisitDate(dateToCalculateFrom, client.classification, newCriticalStatus);
@@ -312,7 +320,15 @@ function DashboardPageContent() {
 
   const selectedClient = useMemo(() => {
     if (!selectedClientId) return null;
-    return clients.find(c => c.id === selectedClientId) || null;
+    const client = clients.find(c => c.id === selectedClientId) || null;
+    if (client) {
+      return {
+        ...client,
+        lastVisitDate: client.lastVisitDate instanceof Timestamp ? client.lastVisitDate.toDate() : client.lastVisitDate,
+        createdAt: client.createdAt instanceof Timestamp ? client.createdAt.toDate() : client.createdAt,
+      }
+    }
+    return null;
   }, [selectedClientId, clients]);
 
   const stats = useMemo(() => {
@@ -484,7 +500,7 @@ function DashboardPageContent() {
       </div>
       <AddClientDialog 
         open={isAddClientOpen}
-        onOpenChange={setAddClientOpen}
+        onOpenChange={setAdd-client-dialog}
         onClientAdded={handleAddClient}
       />
     </>
