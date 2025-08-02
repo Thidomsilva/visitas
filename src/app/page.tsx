@@ -18,7 +18,7 @@ import { AnalyticsView } from "@/components/analytics-view";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from 'date-fns/locale';
-import { getInitialClientsForSeed } from "@/lib/data";
+import { getInitialClientsForSeed, getResponsavel } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
@@ -242,6 +242,27 @@ function DashboardPageContent() {
     })
   };
 
+  const handleUpdateClassification = async (clientId: string, newClassification: ClientClassification) => {
+    const clientRef = doc(db, "clients", clientId);
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    const newResponsavel = getResponsavel(client.unit, newClassification);
+    const dateToRecalculateFrom = client.lastVisitDate ?? client.createdAt;
+    const nextVisitDate = calculateNextVisitDate(dateToRecalculateFrom as Date, newClassification, client.isCritical);
+
+    await updateDoc(clientRef, {
+      classification: newClassification,
+      responsavel: newResponsavel,
+      nextVisitDate: Timestamp.fromDate(nextVisitDate),
+    });
+
+    toast({
+        title: "Classificação Atualizada!",
+        description: `O cliente ${client.name} agora é Classe ${newClassification}. A próxima visita foi reagendada.`,
+    });
+  };
+
 
   const handleAddClient = async (newClient: Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits' | 'isCritical' | 'createdAt'>) => {
     const creationDate = new Date();
@@ -335,6 +356,7 @@ function DashboardPageContent() {
             onDeleteClient={handleDeleteClient}
             onToggleCriticalStatus={handleToggleCriticalStatus}
             onScheduleMeeting={handleScheduleMeeting}
+            onUpdateClassification={handleUpdateClassification}
           />
         </main>
       );
@@ -440,6 +462,7 @@ function DashboardPageContent() {
             onDeleteClient={handleDeleteClient}
             onToggleCriticalStatus={handleToggleCriticalStatus}
             onScheduleMeeting={handleScheduleMeeting}
+            onUpdateClassification={handleUpdateClassification}
           />
         </main>
       </div>
@@ -464,6 +487,7 @@ function DashboardPageContent() {
             onDeleteClient={handleDeleteClient}
             onToggleCriticalStatus={handleToggleCriticalStatus}
             onScheduleMeeting={handleScheduleMeeting}
+            onUpdateClassification={handleUpdateClassification}
           />
         );
       case 'analytics':

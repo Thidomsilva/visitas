@@ -1,13 +1,13 @@
 
 "use client"
-import type { Client, Visit } from "@/lib/types";
+import type { Client, Visit, ClientClassification } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { format } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { StatusBadge } from "./status-badge";
 import { getVisitStatus } from "@/lib/utils";
 import { Button } from "./ui/button";
-import { PlusCircle, Trash2, AlertTriangle, Calendar as CalendarIcon, History } from "lucide-react";
+import { PlusCircle, Trash2, AlertTriangle, Calendar as CalendarIcon, History, Pencil } from "lucide-react";
 import { VisitHistoryDialog } from "./visit-history-dialog";
 import { useState, useMemo } from "react";
 import { VisitLogDialog } from "./visit-log-dialog";
@@ -15,6 +15,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "./ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Label } from "./ui/label";
 
 interface ClientDetailProps {
   client: Client | null;
@@ -22,12 +24,14 @@ interface ClientDetailProps {
   onDeleteClient: (clientId: string) => void;
   onToggleCriticalStatus: (clientId: string) => void;
   onScheduleMeeting: (clientId: string, date: Date) => void;
+  onUpdateClassification: (clientId: string, newClassification: ClientClassification) => void;
 }
 
-export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCriticalStatus, onScheduleMeeting }: ClientDetailProps) {
+export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCriticalStatus, onScheduleMeeting, onUpdateClassification }: ClientDetailProps) {
   const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [schedulePopoverOpen, setSchedulePopoverOpen] = useState(false);
+  const [editClassPopoverOpen, setEditClassPopoverOpen] = useState(false);
   
   const status = useMemo(() => client ? getVisitStatus(client.nextVisitDate as Date | null) : 'no-visits', [client]);
   
@@ -42,6 +46,14 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
       setSchedulePopoverOpen(false);
     }
   };
+
+  const handleClassificationChange = (newClassification: ClientClassification) => {
+    if (client) {
+      onUpdateClassification(client.id, newClassification);
+      setEditClassPopoverOpen(false);
+    }
+  };
+
 
   if (!client) {
     return (
@@ -127,9 +139,38 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
                 <h4 className="font-semibold text-muted-foreground">Responsável</h4>
                 <p>{client.responsavel}</p>
             </div>
-            <div className="p-4 bg-slate-50 rounded-lg">
-                <h4 className="font-semibold text-muted-foreground">Curva</h4>
-                <p>Classe {client.classification}</p>
+             <div className="p-4 bg-slate-50 rounded-lg">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h4 className="font-semibold text-muted-foreground">Curva</h4>
+                        <p>Classe {client.classification}</p>
+                    </div>
+                    <Popover open={editClassPopoverOpen} onOpenChange={setEditClassPopoverOpen}>
+                        <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48" align="end">
+                            <div className="space-y-2">
+                                <Label htmlFor="classification-select">Alterar Curva</Label>
+                                <Select
+                                    defaultValue={client.classification}
+                                    onValueChange={(value) => handleClassificationChange(value as ClientClassification)}
+                                >
+                                    <SelectTrigger id="classification-select">
+                                        <SelectValue placeholder="Selecione..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="A">Classe A</SelectItem>
+                                        <SelectItem value="B">Classe B</SelectItem>
+                                        <SelectItem value="C">Classe C</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                </div>
             </div>
             <div className="p-4 bg-slate-50 rounded-lg">
                 <h4 className="font-semibold text-muted-foreground">Próxima Visita</h4>
@@ -182,5 +223,3 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
     </Card>
   )
 }
-
-    

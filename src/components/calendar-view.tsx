@@ -5,7 +5,7 @@ import React, { useMemo, useState } from 'react';
 import { DayPicker, DayProps } from 'react-day-picker';
 import { ptBR } from 'date-fns/locale';
 import { format, isSameDay, startOfMonth } from 'date-fns';
-import { Client, Visit } from '@/lib/types';
+import { Client, Visit, ClientClassification } from '@/lib/types';
 import { getVisitStatus, cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
@@ -29,6 +29,7 @@ interface CalendarViewProps {
     onDeleteClient: (clientId: string) => void;
     onToggleCriticalStatus: (clientId: string) => void;
     onScheduleMeeting: (clientId: string, date: Date) => void;
+    onUpdateClassification: (clientId: string, newClassification: ClientClassification) => void;
 }
 
 function CustomDay(props: DayProps) {
