@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 
 type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
 type ViewType = "dashboard" | "calendar";
+type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
 
 
 function DashboardSkeleton() {
@@ -53,12 +54,17 @@ function DashboardPageContent() {
   const [clients, setClients] = useState<Client[]>(() => generateSchedule(initialClients));
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [unitFilter, setUnitFilter] = useState<UnitFilterType>('all');
   const [isAddClientOpen, setAddClientOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [view, setView] = useState<ViewType>("dashboard");
 
+  const clientsForStats = useMemo(() => {
+    return unitFilter === 'all' ? clients : clients.filter(c => c.unit === unitFilter);
+  }, [clients, unitFilter]);
+
   const filteredClients = useMemo(() => {
-    let sortedClients = [...clients].sort((a, b) => {
+    let sortedClients = [...clientsForStats].sort((a, b) => {
       // Critical clients on top
       if (a.isCritical && !b.isCritical) return -1;
       if (!a.isCritical && b.isCritical) return 1;
@@ -98,7 +104,7 @@ function DashboardPageContent() {
     
     return sortedClients;
 
-  }, [clients, filter, searchQuery]);
+  }, [clientsForStats, filter, searchQuery]);
 
   useEffect(() => {
     if (view === 'dashboard' && filteredClients.length > 0 && !selectedClientId) {
@@ -113,7 +119,7 @@ function DashboardPageContent() {
     } else if (view === 'dashboard' && filteredClients.length === 0) {
       setSelectedClientId(null);
     }
-  }, [filter, clients, selectedClientId, filteredClients, searchQuery, view]);
+  }, [filter, clients, selectedClientId, filteredClients, searchQuery, view, unitFilter]);
   
 
   const handleVisitLogged = (clientId: string, visit: Visit) => {
@@ -195,22 +201,22 @@ function DashboardPageContent() {
   }, [selectedClientId, clients]);
 
   const stats = useMemo(() => {
-    return clients.reduce((acc, client) => {
+    return clientsForStats.reduce((acc, client) => {
       const status = getVisitStatus(client.nextVisitDate);
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {} as Record<VisitStatus, number>);
-  }, [clients]);
+  }, [clientsForStats]);
 
   const classificationStats = useMemo(() => {
-    return clients.reduce((acc, client) => {
+    return clientsForStats.reduce((acc, client) => {
       if (!acc[client.classification]) {
         acc[client.classification] = 0;
       }
       acc[client.classification]++;
       return acc;
     }, {} as Record<ClientClassification, number>);
-  }, [clients]);
+  }, [clientsForStats]);
   
   const handleFilterChange = (newFilter: FilterType) => {
     setFilter(currentFilter => currentFilter === newFilter ? 'all' : newFilter);
@@ -234,6 +240,8 @@ function DashboardPageContent() {
               onFilterChange={(value) => setFilter(value as FilterType)}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
+              unitFilter={unitFilter}
+              onUnitFilterChange={setUnitFilter}
             />
             <main className="flex-1 flex flex-col p-6 overflow-y-auto">
              <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6 mb-6">
@@ -247,7 +255,7 @@ function DashboardPageContent() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{classificationStats['A'] || 0}</div>
-                  <p className="text-xs text-muted-foreground">do total de {clients.length}</p>
+                  <p className="text-xs text-muted-foreground">do total de {clientsForStats.length}</p>
                 </CardContent>
               </Card>
               <Card
@@ -260,7 +268,7 @@ function DashboardPageContent() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{classificationStats['B'] || 0}</div>
-                   <p className="text-xs text-muted-foreground">do total de {clients.length}</p>
+                   <p className="text-xs text-muted-foreground">do total de {clientsForStats.length}</p>
                 </CardContent>
               </Card>
               <Card
@@ -273,7 +281,7 @@ function DashboardPageContent() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{classificationStats['C'] || 0}</div>
-                   <p className="text-xs text-muted-foreground">do total de {clients.length}</p>
+                   <p className="text-xs text-muted-foreground">do total de {clientsForStats.length}</p>
                 </CardContent>
               </Card>
               <Card
@@ -328,7 +336,7 @@ function DashboardPageContent() {
           </div>
         ) : (
           <CalendarView
-            clients={clients}
+            clients={clientsForStats}
             onClientClick={(clientId) => setSelectedClientId(clientId)}
             selectedClientId={selectedClientId}
             onVisitLogged={handleVisitLogged}

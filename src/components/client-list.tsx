@@ -10,6 +10,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertTriangle, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
 
 const statusIndicatorConfig = {
   'overdue': 'bg-red-500',
@@ -19,6 +22,8 @@ const statusIndicatorConfig = {
 };
 
 type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
+type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
+
 
 interface ClientListProps {
   clients: Client[];
@@ -28,6 +33,8 @@ interface ClientListProps {
   onFilterChange: (value: FilterType) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  unitFilter: UnitFilterType;
+  onUnitFilterChange: (value: UnitFilterType) => void;
 }
 
 export function ClientList({ 
@@ -37,7 +44,9 @@ export function ClientList({
   filter, 
   onFilterChange,
   searchQuery,
-  onSearchChange
+  onSearchChange,
+  unitFilter,
+  onUnitFilterChange
 }: ClientListProps) {
   
   const getTabValue = () => {
@@ -60,7 +69,20 @@ export function ClientList({
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
-        <Tabs value={getTabValue()} onValueChange={(val) => onFilterChange(val as FilterType)} className="mt-4">
+        <div>
+          <Label className="text-sm text-muted-foreground">Unidade</Label>
+           <Select value={unitFilter} onValueChange={(val) => onUnitFilterChange(val as UnitFilterType)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione a unidade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Unidades</SelectItem>
+              <SelectItem value="LONDRINA">Londrina</SelectItem>
+              <SelectItem value="CURITIBA">Curitiba</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Tabs value={getTabValue()} onValueChange={(val) => onFilterChange(val as FilterType)} className="mt-2">
             <TabsList className="grid w-full grid-cols-3 h-auto flex-wrap">
               <TabsTrigger value="all" className="flex-1">Todos</TabsTrigger>
               <TabsTrigger value="on-schedule" className="flex-1">Em Dia</TabsTrigger>
