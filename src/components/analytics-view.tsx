@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend, Tooltip, LabelList } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Client, ClientClassification, VisitStatus } from '@/lib/types';
@@ -35,11 +35,11 @@ export function AnalyticsView({ clients }: AnalyticsViewProps) {
     });
 
     return Object.entries(monthCounts)
+      .sort(([monthA], [monthB]) => monthA.localeCompare(monthB))
       .map(([month, count]) => ({
         month: format(parseISO(`${month}-01`), 'MMM/yy', { locale: ptBR }),
         visits: count,
-      }))
-      .sort((a, b) => a.month.localeCompare(b.month));
+      }));
   }, [clients]);
 
   const clientsByResponsavel = useMemo(() => {
@@ -83,7 +83,9 @@ export function AnalyticsView({ clients }: AnalyticsViewProps) {
               <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
               <YAxis />
               <Tooltip cursor={false} content={<ChartTooltipContent />} />
-              <Bar dataKey="visits" fill="hsl(var(--primary))" radius={4} />
+              <Bar dataKey="visits" fill="hsl(var(--primary))" radius={4}>
+                 <LabelList position="top" offset={5} className="fill-foreground text-xs" />
+              </Bar>
             </BarChart>
           </ChartContainer>
         </CardContent>
@@ -99,13 +101,19 @@ export function AnalyticsView({ clients }: AnalyticsViewProps) {
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
               <BarChart data={clientsByResponsavel} layout="vertical" accessibilityLayer>
                 <CartesianGrid horizontal={false} />
-                <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} />
+                <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={80}/>
                 <XAxis type="number" dataKey="A" hide/>
                 <Tooltip cursor={false} content={<ChartTooltipContent />} />
                 <Legend />
-                <Bar dataKey="A" stackId="a" fill="var(--color-A)" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="B" stackId="a" fill="var(--color-B)" />
-                <Bar dataKey="C" stackId="a" fill="var(--color-C)" radius={[4, 0, 0, 4]} />
+                <Bar dataKey="A" stackId="a" fill="var(--color-A)" radius={[0, 4, 4, 0]}>
+                   <LabelList position="insideRight" offset={8} className="fill-white text-xs" />
+                </Bar>
+                <Bar dataKey="B" stackId="a" fill="var(--color-B)">
+                   <LabelList position="insideRight" offset={8} className="fill-white text-xs" />
+                </Bar>
+                <Bar dataKey="C" stackId="a" fill="var(--color-C)" radius={[0, 4, 4, 0]}>
+                   <LabelList position="insideRight" offset={8} className="fill-white text-xs" />
+                </Bar>
               </BarChart>
             </ChartContainer>
           </CardContent>
@@ -123,9 +131,15 @@ export function AnalyticsView({ clients }: AnalyticsViewProps) {
                     <YAxis />
                     <Tooltip cursor={false} content={<ChartTooltipContent />} />
                     <Legend />
-                    <Bar dataKey="on-schedule" fill="var(--color-on-schedule)" radius={4} />
-                    <Bar dataKey="approaching" fill="var(--color-approaching)" radius={4} />
-                    <Bar dataKey="overdue" fill="var(--color-overdue)" radius={4} />
+                    <Bar dataKey="on-schedule" fill="var(--color-on-schedule)" radius={4}>
+                       <LabelList position="top" offset={5} className="fill-foreground text-xs" />
+                    </Bar>
+                    <Bar dataKey="approaching" fill="var(--color-approaching)" radius={4}>
+                        <LabelList position="top" offset={5} className="fill-foreground text-xs" />
+                    </Bar>
+                    <Bar dataKey="overdue" fill="var(--color-overdue)" radius={4}>
+                        <LabelList position="top" offset={5} className="fill-foreground text-xs" />
+                    </Bar>
                 </BarChart>
             </ChartContainer>
           </CardContent>
