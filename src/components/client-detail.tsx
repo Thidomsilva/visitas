@@ -48,7 +48,7 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient }: ClientDe
                     <CardTitle className="text-2xl">{client.name}</CardTitle>
                     <StatusBadge status={status} />
                 </div>
-                <CardDescription className="mt-1">{client.contact}</CardDescription>
+                <CardDescription className="mt-1">Unidade: {client.unit}</CardDescription>
             </div>
             <div className="flex gap-2">
                  <Button variant="outline" onClick={() => setLogDialogOpen(true)}>
@@ -81,8 +81,8 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient }: ClientDe
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="p-4 bg-slate-50 rounded-lg">
-                <h4 className="font-semibold text-muted-foreground">Consultor</h4>
-                <p>{client.consultant}</p>
+                <h4 className="font-semibold text-muted-foreground">Responsável</h4>
+                <p>{client.responsavel}</p>
             </div>
             <div className="p-4 bg-slate-50 rounded-lg">
                 <h4 className="font-semibold text-muted-foreground">Curva</h4>

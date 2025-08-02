@@ -10,8 +10,8 @@ export type Visit = {
 export type Client = {
   id: string;
   name: string;
-  contact: string;
-  consultant: string;
+  unit: string;
+  responsavel: string;
   classification: ClientClassification;
   lastVisitDate: Date | null;
   nextVisitDate: Date | null;
@@ -20,8 +20,8 @@ export type Client = {
 
 export type VisitStatus = 'on-schedule' | 'approaching' | 'overdue' | 'no-visits';
 
-export const classificationIntervals: Record<ClientClassification, number> = {
-  A: 30, // days
-  B: 45,
-  C: 60,
+export const classificationIntervals: Record<ClientClassification, { min: number; max: number }> = {
+  A: { min: 25, max: 35 },
+  B: { min: 36, max: 50 },
+  C: { min: 50, max: 90 },
 };

@@ -8,11 +8,12 @@ import { classificationIntervals, type Client, type Visit, type VisitStatus, Cli
 import { getVisitStatus } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Star, Diamond, Gem, CalendarClock } from 'lucide-react';
+import { Gem, Diamond, Star, CalendarClock } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddClientDialog } from "@/components/add-client-dialog";
 import { ClientList } from "@/components/client-list";
 import { ClientDetail } from "@/components/client-detail";
+import { generateSchedule } from "@/lib/scheduler";
 
 type FilterType = "all" | VisitStatus;
 
@@ -22,67 +23,6 @@ export default function DashboardPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [isAddClientOpen, setAddClientOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setIsMounted(true);
-    if (filteredClients.length > 0 && !selectedClientId) {
-      setSelectedClientId(filteredClients[0].id);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (filteredClients.length > 0 && !selectedClientId) {
-      setSelectedClientId(filteredClients[0].id);
-    } else if (filteredClients.length === 0) {
-      setSelectedClientId(null);
-    }
-  }, [filter, clients]);
-  
-
-  const handleVisitLogged = (clientId: string, visit: Visit) => {
-    setClients(prevClients => {
-      return prevClients.map(client => {
-        if (client.id === clientId) {
-          const newLastVisitDate = visit.date;
-          const interval = classificationIntervals[client.classification];
-          const newNextVisitDate = addDays(newLastVisitDate, interval);
-          
-          const sortedVisits = [visit, ...client.visits].sort((a,b) => b.date.getTime() - a.date.getTime());
-          
-          return {
-            ...client,
-            lastVisitDate: newLastVisitDate,
-            nextVisitDate: newNextVisitDate,
-            visits: sortedVisits,
-          };
-        }
-        return client;
-      });
-    });
-  };
-
-  const handleAddClient = (newClient: Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits'>) => {
-    const clientToAdd: Client = {
-      ...newClient,
-      id: crypto.randomUUID(),
-      lastVisitDate: null,
-      nextVisitDate: null,
-      visits: [],
-    };
-    const newClients = [clientToAdd, ...clients];
-    setClients(newClients);
-    setSelectedClientId(clientToAdd.id);
-  }
-
-  const handleDeleteClient = (clientId: string) => {
-    setClients(prev => {
-      const newClients = prev.filter(client => client.id !== clientId);
-      if (selectedClientId === clientId) {
-        setSelectedClientId(newClients.length > 0 ? newClients[0].id : null);
-      }
-      return newClients;
-    });
-  }
 
   const filteredClients = useMemo(() => {
     const sortedClients = [...clients].sort((a, b) => {
@@ -107,6 +47,77 @@ export default function DashboardPage() {
     if (filter === 'all') return sortedClients;
     return sortedClients.filter(client => getVisitStatus(client.nextVisitDate) === filter);
   }, [clients, filter]);
+  
+  useEffect(() => {
+    setIsMounted(true);
+    // Generate the initial schedule for all clients
+    const scheduledClients = generateSchedule(clients);
+    setClients(scheduledClients);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted && filteredClients.length > 0 && !selectedClientId) {
+      setSelectedClientId(filteredClients[0].id);
+    }
+  }, [isMounted, filteredClients, selectedClientId]);
+
+
+  useEffect(() => {
+    if (filteredClients.length > 0 && !filteredClients.find(c => c.id === selectedClientId)) {
+      setSelectedClientId(filteredClients[0].id);
+    } else if (filteredClients.length === 0) {
+      setSelectedClientId(null);
+    }
+  }, [filter, clients, selectedClientId, filteredClients]);
+  
+
+  const handleVisitLogged = (clientId: string, visit: Visit) => {
+    setClients(prevClients => {
+      const clientIndex = prevClients.findIndex(c => c.id === clientId);
+      if (clientIndex === -1) return prevClients;
+  
+      const updatedClients = [...prevClients];
+      const clientToUpdate = { ...updatedClients[clientIndex] };
+  
+      // Add the new visit and sort
+      const sortedVisits = [visit, ...clientToUpdate.visits].sort((a,b) => b.date.getTime() - a.date.getTime());
+      
+      clientToUpdate.visits = sortedVisits;
+      clientToUpdate.lastVisitDate = visit.date;
+
+      // Regenerate the rest of the schedule from this point
+      const regeneratedSchedule = generateSchedule(updatedClients, clientIndex);
+  
+      return regeneratedSchedule;
+    });
+  };
+
+  const handleAddClient = (newClient: Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits'>) => {
+    const clientToAdd: Client = {
+      ...newClient,
+      id: crypto.randomUUID(),
+      lastVisitDate: null,
+      nextVisitDate: null,
+      visits: [],
+    };
+    const newClients = [clientToAdd, ...clients];
+    // We need to regenerate the schedule with the new client
+    const scheduledClients = generateSchedule(newClients);
+    setClients(scheduledClients);
+    setSelectedClientId(clientToAdd.id);
+  }
+
+  const handleDeleteClient = (clientId: string) => {
+    setClients(prev => {
+      const newClients = prev.filter(client => client.id !== clientId);
+      // Regenerate schedule after deleting
+      const scheduledClients = generateSchedule(newClients);
+       if (selectedClientId === clientId) {
+        setSelectedClientId(scheduledClients.length > 0 ? scheduledClients[0].id : null);
+      }
+      return scheduledClients;
+    });
+  }
 
   const selectedClient = useMemo(() => {
     if (!selectedClientId) return null;

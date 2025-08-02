@@ -8,12 +8,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import type { Client, ClientClassification } from '@/lib/types';
 
 const clientSchema = z.object({
   name: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
-  contact: z.string().email('Por favor, insira um e-mail válido.'),
-  consultant: z.string().min(3, 'O nome do consultor deve ter pelo menos 3 caracteres.'),
+  unit: z.enum(['LONDRINA', 'CURITIBA'], {
+    errorMap: () => ({ message: "Selecione uma unidade" })
+  }),
+  responsavel: z.string().min(3, 'O nome do responsável deve ter pelo menos 3 caracteres.'),
   classification: z.enum(['A', 'B', 'C'], {
     errorMap: () => ({ message: "Selecione uma classificação" })
   }),
@@ -32,8 +35,8 @@ export function AddClientDialog({ open, onOpenChange, onClientAdded }: AddClient
     resolver: zodResolver(clientSchema),
     defaultValues: {
       name: '',
-      contact: '',
-      consultant: 'Não definido',
+      unit: undefined,
+      responsavel: '',
       classification: undefined,
     },
   });
@@ -41,8 +44,8 @@ export function AddClientDialog({ open, onOpenChange, onClientAdded }: AddClient
   function onSubmit(values: z.infer<typeof clientSchema>) {
     const newClientData = {
       name: values.name,
-      contact: values.contact,
-      consultant: values.consultant,
+      unit: values.unit,
+      responsavel: values.responsavel,
       classification: values.classification as ClientClassification,
     };
     onClientAdded(newClientData);
@@ -76,12 +79,29 @@ export function AddClientDialog({ open, onOpenChange, onClientAdded }: AddClient
             />
             <FormField
               control={form.control}
-              name="contact"
+              name="unit"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>E-mail de Contato</FormLabel>
+                <FormItem className="space-y-3">
+                  <FormLabel>Unidade</FormLabel>
                   <FormControl>
-                    <Input placeholder="contato@exemplo.com" {...field} />
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="LONDRINA" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Londrina</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="CURITIBA" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Curitiba</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -89,12 +109,12 @@ export function AddClientDialog({ open, onOpenChange, onClientAdded }: AddClient
             />
              <FormField
               control={form.control}
-              name="consultant"
+              name="responsavel"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Consultor Responsável</FormLabel>
+                  <FormLabel>Responsável</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: João Silva" {...field} />
+                    <Input placeholder="Ex: Thiago" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
