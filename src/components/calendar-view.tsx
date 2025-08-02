@@ -6,7 +6,7 @@ import { DayPicker, DayProps } from 'react-day-picker';
 import { ptBR } from 'date-fns/locale';
 import { format, isSameDay, startOfMonth } from 'date-fns';
 import { Client, Visit, ClientClassification } from '@/lib/types';
-import { getVisitStatus, cn } from '@/lib/utils';
+import { getVisitStatus, cn, isBusinessDay } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { ClientDetail } from './client-detail';
@@ -113,7 +113,7 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
 
   return (
     <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 gap-4">
-      <div className="flex-1 md:flex-[3] bg-white rounded-lg border p-1 md:p-4 h-full flex flex-col">
+      <div className="flex-1 md:flex-[3] bg-card rounded-lg border p-1 md:p-4 h-full flex flex-col">
          <DayPicker
             locale={ptBR}
             month={currentMonth}
@@ -122,9 +122,11 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
             classNames={{
                 table: "h-full w-full border-collapse",
                 tbody: "h-full",
-                row: "h-1/6 flex",
-                cell: "h-full w-[calc(100%/7)] border align-top",
-                day: "h-full w-full p-0"
+                row: "h-[calc(100%/6)] flex w-full",
+                cell: "h-full w-[calc(100%/7)] border-t first:border-l align-top relative",
+                day: "h-full w-full p-0",
+                day_disabled: "text-muted-foreground/50",
+                day_outside: "text-muted-foreground/50",
             }}
             components={{
               Day: (props: DayProps) => {
@@ -134,6 +136,7 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
                 return <CustomDay {...props} day={{...props.day, appContext}}/>
               }
             }}
+            disabled={date => !isBusinessDay(date)}
             showOutsideDays
           />
       </div>
@@ -141,7 +144,7 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
          {selectedClient ? (
             <ClientDetail client={selectedClient} {...clientDetailProps} />
          ) : (
-            <div className="p-4 bg-white rounded-lg border h-full flex items-center justify-center text-center">
+            <div className="p-4 bg-card rounded-lg border h-full flex items-center justify-center text-center">
               <div>
                 <h3 className="font-semibold text-lg mb-2">Cliente Selecionado</h3>
                 <p className="text-sm text-muted-foreground">Clique em um cliente no calendário para ver seus detalhes aqui e registrar uma visita.</p>
@@ -152,5 +155,3 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
     </div>
   );
 }
-
-    
