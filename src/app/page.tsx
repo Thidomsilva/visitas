@@ -43,9 +43,11 @@ function deserializeClient(client: Client): Client {
     const toDate = (timestamp: any): Date | null => {
         if (!timestamp) return null;
         if (timestamp instanceof Date) return timestamp;
+        // Firestore Timestamps have a toDate() method
         if (timestamp.toDate && typeof timestamp.toDate === 'function') {
             return timestamp.toDate();
         }
+        // Fallback for string or number representations
         const d = new Date(timestamp);
         return isNaN(d.getTime()) ? null : d;
     };
@@ -54,20 +56,24 @@ function deserializeClient(client: Client): Client {
         ...client,
         lastVisitDate: toDate(client.lastVisitDate),
         nextVisitDate: toDate(client.nextVisitDate),
-        createdAt: toDate(client.createdAt) as Date,
-        visits: client.visits.map(v => ({ ...v, date: toDate(v.date) as Date })),
+        // Ensure createdAt is always a Date object, defaulting to now if missing
+        createdAt: toDate(client.createdAt) || new Date(),
+        visits: Array.isArray(client.visits) ? client.visits.map(v => ({ ...v, date: toDate(v.date) as Date })) : [],
     };
 }
 
 
 const holidaysDateObjects = nationalHolidays.map(holiday => {
     const [year, month, day] = holiday.split('-').map(Number);
-    return new Date(year, month - 1, day);
+    // Create date in UTC to avoid timezone issues
+    return new Date(Date.UTC(year, month - 1, day));
 });
 
 const isHoliday = (date: Date): boolean => {
-    return holidaysDateObjects.some(holiday => isSameDay(date, holiday));
-}
+    // Compare using UTC dates to be consistent
+    const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    return holidaysDateObjects.some(holiday => isSameDay(utcDate, holiday));
+};
 
 const findNextBusinessDay = (date: Date): Date => {
     let nextDate = new Date(date);
@@ -350,7 +356,7 @@ function DashboardPageContent() {
       dateToCalculateFrom = new Date();
     } else {
       // Ao deixar de ser crítico, recalcula a partir da última visita ou da criação
-      dateToCalculateFrom = client.lastVisitDate || client.createdAt;
+      dateToCalculateFrom = client.lastVisitDate as Date || client.createdAt as Date;
     }
 
     const nextVisitDate = calculateNextVisitDate(dateToCalculateFrom, client.classification, newCriticalStatus);
