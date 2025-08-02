@@ -1,4 +1,4 @@
-import { Briefcase, PlusCircle, Settings, Trash2 } from "lucide-react";
+import { Briefcase, PlusCircle, Settings, Trash2, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import {
@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useAuth } from "@/context/auth-context";
 
 type ViewType = "dashboard" | "calendar" | "analytics";
 
@@ -32,6 +33,8 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ onAddClient, view, onViewChange, onSeedDatabase, isSeeding }: DashboardHeaderProps) {
+  const { logout, user } = useAuth();
+  
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -65,8 +68,8 @@ export function DashboardHeader({ onAddClient, view, onViewChange, onSeedDatabas
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Trash2 className="mr-2 h-4 w-4 text-destructive"/>
-                                <span className="text-destructive">Resetar & Popular Banco</span>
+                                <Trash2 className="mr-2 h-4 w-4"/>
+                                <span>Resetar & Popular Banco</span>
                            </DropdownMenuItem>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -86,6 +89,11 @@ export function DashboardHeader({ onAddClient, view, onViewChange, onSeedDatabas
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
+                    <DropdownMenuSeparator />
+                     <DropdownMenuItem onClick={logout}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Sair</span>
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>

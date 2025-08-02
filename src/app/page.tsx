@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -31,34 +32,41 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useAuth } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
 
 type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
 type ViewType = "dashboard" | "calendar" | "analytics";
 type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
 
 function deserializeClient(client: Client): Client {
-  const toDate = (timestamp: any): Date | null => {
-    if (!timestamp) return null;
-    if (timestamp instanceof Date) return timestamp;
-    if (timestamp instanceof Timestamp) return timestamp.toDate();
-    const d = new Date(timestamp);
-    return isNaN(d.getTime()) ? null : d;
-  };
-
-  return {
-    ...client,
-    lastVisitDate: toDate(client.lastVisitDate),
-    nextVisitDate: toDate(client.nextVisitDate),
-    createdAt: toDate(client.createdAt) as Date,
-    visits: client.visits.map(v => ({ ...v, date: toDate(v.date) as Date })),
-  };
+    const toDate = (timestamp: any): Date | null => {
+        if (!timestamp) return null;
+        if (timestamp instanceof Date) return timestamp;
+        if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+            return timestamp.toDate();
+        }
+        const d = new Date(timestamp);
+        return isNaN(d.getTime()) ? null : d;
+    };
+    
+    return {
+        ...client,
+        lastVisitDate: toDate(client.lastVisitDate),
+        nextVisitDate: toDate(client.nextVisitDate),
+        createdAt: toDate(client.createdAt) as Date,
+        visits: client.visits.map(v => ({ ...v, date: toDate(v.date) as Date })),
+    };
 }
 
-const holidaysDateObjects = nationalHolidays.map(holiday => new Date(holiday));
+
+const holidaysDateObjects = nationalHolidays.map(holiday => {
+    const [year, month, day] = holiday.split('-').map(Number);
+    return new Date(year, month - 1, day);
+});
 
 const isHoliday = (date: Date): boolean => {
-    const adjustedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-    return holidaysDateObjects.some(holiday => isSameDay(adjustedDate, holiday));
+    return holidaysDateObjects.some(holiday => isSameDay(date, holiday));
 }
 
 const findNextBusinessDay = (date: Date): Date => {
@@ -535,13 +543,16 @@ function DashboardPageContent() {
 }
 
 export default function DashboardPage() {
-  const [isMounted, setIsMounted] = useState(false);
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
-  if (!isMounted) {
+  if (loading || !user) {
     return <DashboardSkeleton />;
   }
 
