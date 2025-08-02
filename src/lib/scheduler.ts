@@ -26,7 +26,8 @@ function isHoliday(date: Date) {
   return holidays.has(format(date, 'yyyy-MM-dd'));
 }
 
-function isValidVisitDay(date: Date) {
+function isValidVisitDay(date: Date, allowMonday = false) {
+  if(allowMonday && isMonday(date)) return !isHoliday(date);
   return !isMonday(date) && !isSaturday(date) && !isSunday(date) && !isHoliday(date);
 }
 
@@ -46,19 +47,31 @@ export function generateSchedule(clients: Client[], startIndex = 0): Client[] {
     });
   }
 
+   // Pre-populate schedule with predefined visits
+  clients.forEach(client => {
+    client.visits.forEach(visit => {
+      if (visit.feedback === 'Visita pré-agendada.') {
+        const dateKey = format(visit.date, 'yyyy-MM-dd');
+        schedule[dateKey] = (schedule[dateKey] || 0) + 1;
+      }
+    });
+  });
+
   // Schedule visits for each client starting from the startIndex
   for (let i = startIndex; i < updatedClients.length; i++) {
     const client = { ...updatedClients[i] };
     
     // Simulate a past "last visit" to generate a realistic schedule from the start date
     let lastVisitDate: Date;
+    
+    const hasPredefinedVisit = client.visits.some(v => v.feedback === 'Visita pré-agendada.');
 
     if (client.lastVisitDate) {
         lastVisitDate = new Date(client.lastVisitDate);
         // Clear future visits if we are rescheduling from a real visit
          if (startIndex > 0) {
             client.visits = client.visits.filter(v => v.date <= client.lastVisitDate!);
-        } else {
+        } else if(!hasPredefinedVisit) {
             client.visits = [];
         }
     } else {
@@ -68,7 +81,9 @@ export function generateSchedule(clients: Client[], startIndex = 0): Client[] {
        const randomDaysPast = getRandomInt(0, interval.max); // From 0 to max days ago
        const baseDate = client.classification === 'A' ? new Date('2025-08-12T00:00:00') : startDate;
        lastVisitDate = subDays(baseDate, randomDaysPast);
-       client.visits = []; // Ensure we are starting fresh
+       if(!hasPredefinedVisit) {
+         client.visits = []; // Ensure we are starting fresh if no predefined visits
+       }
     }
 
     let nextVisitDate = new Date(lastVisitDate);
@@ -84,6 +99,7 @@ export function generateSchedule(clients: Client[], startIndex = 0): Client[] {
         if (candidateDate > endDate) break;
 
         const dateKey = format(candidateDate, 'yyyy-MM-dd');
+        // A predefined visit does not count towards the daily limit of automatic scheduling
         if (isValidVisitDay(candidateDate) && (schedule[dateKey] || 0) < 2) {
           schedule[dateKey] = (schedule[dateKey] || 0) + 1;
           break; // Found a valid slot

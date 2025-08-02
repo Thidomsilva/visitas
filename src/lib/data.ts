@@ -1,6 +1,6 @@
 import type { Client, ClientClassification } from './types';
 
-const clientsData: { name: string, unit: string, classification: ClientClassification }[] = [
+const clientsData: { name: string, unit: string, classification: ClientClassification, predefinedVisit?: string }[] = [
   { name: 'AGEX', unit: 'LONDRINA', classification: 'C' },
   { name: 'APITEC', unit: 'LONDRINA', classification: 'B' },
   { name: 'APOLO', unit: 'LONDRINA', classification: 'B' },
@@ -9,7 +9,7 @@ const clientsData: { name: string, unit: string, classification: ClientClassific
   { name: 'ARNALDO\'S', unit: 'LONDRINA', classification: 'A' },
   { name: 'ASTER', unit: 'LONDRINA', classification: 'C' },
   { name: 'ATLANTIS', unit: 'CURITIBA', classification: 'B' },
-  { name: 'ATZ', unit: 'LONDRINA', classification: 'A' },
+  { name: 'ATZ', unit: 'LONDRINA', classification: 'A', predefinedVisit: '2025-08-04T10:00:00' },
   { name: 'AUTO CENTER BANDEIRANTES', unit: 'LONDRINA', classification: 'A' },
   { name: 'AVANTE', unit: 'LONDRINA', classification: 'B' },
   { name: 'AVATRON', unit: 'LONDRINA', classification: 'B' },
@@ -19,7 +19,7 @@ const clientsData: { name: string, unit: string, classification: ClientClassific
   { name: 'BROT', unit: 'LONDRINA', classification: 'B' },
   { name: 'CENTERROL', unit: 'CURITIBA', classification: 'A' },
   { name: 'CHURRASKIN', unit: 'LONDRINA', classification: 'C' },
-  { name: 'CONSTRUTORA STENGE', unit: 'LONDRINA', classification: 'A' },
+  { name: 'CONSTRUTORA STENGE', unit: 'LONDRINA', classification: 'A', predefinedVisit: '2025-08-05T10:00:00' },
   { name: 'DEPÓSITO PRINCIPE', unit: 'LONDRINA', classification: 'B' },
   { name: 'ELETRO POLAR', unit: 'CURITIBA', classification: 'A' },
   { name: 'FUNGARI AR CONDICIONADO', unit: 'LONDRINA', classification: 'C' },
@@ -57,13 +57,28 @@ const getResponsavel = (unit: string): string => {
     return Math.random() > 0.5 ? 'Thiago' : 'Vandreia';
 };
 
-export const initialClients: Client[] = clientsData.map((client, index) => ({
-  id: `${index + 1}`,
-  name: client.name,
-  unit: client.unit,
-  responsavel: getResponsavel(client.unit),
-  classification: client.classification,
-  lastVisitDate: null,
-  nextVisitDate: null,
-  visits: [],
-}));
+export const initialClients: Client[] = clientsData.map((clientData, index) => {
+    const client: Client = {
+        id: `${index + 1}`,
+        name: clientData.name,
+        unit: clientData.unit,
+        responsavel: getResponsavel(clientData.unit),
+        classification: clientData.classification,
+        lastVisitDate: null,
+        nextVisitDate: null,
+        visits: [],
+    };
+
+    if (clientData.predefinedVisit) {
+        const visitDate = new Date(clientData.predefinedVisit);
+        client.visits.push({
+            id: crypto.randomUUID(),
+            date: visitDate,
+            feedback: 'Visita pré-agendada.',
+            followUp: 'Realizar visita conforme agendamento.',
+        });
+        client.lastVisitDate = visitDate; // Treat this as the last visit to calculate the next one from it
+    }
+
+    return client;
+});
