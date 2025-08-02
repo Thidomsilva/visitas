@@ -18,7 +18,7 @@ import { AnalyticsView } from "@/components/analytics-view";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from 'date-fns/locale';
-import { getInitialClientsForSeed, getResponsavel } from "@/lib/data";
+import { getResponsavel } from '@/lib/data';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
@@ -200,7 +200,7 @@ function DashboardPageContent() {
 
 
   const handleAddClient = async (newClient: Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits' | 'isCritical' | 'createdAt'>) => {
-    const creationDate = new Date();
+    const creationDate = findNextBusinessDay(new Date());
     const nextVisitDate = calculateNextVisitDate(creationDate, newClient.classification, false);
 
     const clientToAdd = {

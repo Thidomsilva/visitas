@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { format } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { StatusBadge } from "./status-badge";
-import { getVisitStatus } from "@/lib/utils";
+import { getVisitStatus, isBusinessDay } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { PlusCircle, Trash2, AlertTriangle, Calendar as CalendarIcon, History, Pencil } from "lucide-react";
 import { VisitHistoryDialog } from "./visit-history-dialog";
@@ -100,7 +100,7 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
                       mode="single"
                       selected={client.nextVisitDate ? new Date(client.nextVisitDate) : undefined}
                       onSelect={handleDateSelect}
-                      disabled={(date) => date < new Date()}
+                      disabled={(date) => date < new Date() || !isBusinessDay(date)}
                       initialFocus
                     />
                   </PopoverContent>

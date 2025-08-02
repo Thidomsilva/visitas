@@ -44,14 +44,16 @@ export const isHoliday = (date: Date): boolean => {
     return holidaysDateObjects.some(holidayDate => isSameDay(utcDate, holidayDate));
 };
 
+export const isBusinessDay = (date: Date): boolean => {
+    const dayOfWeek = getDay(date);
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    return !isWeekend && !isHoliday(date);
+}
+
 export const findNextBusinessDay = (date: Date): Date => {
     let nextDate = new Date(date);
     while (true) {
-        const dayOfWeek = getDay(nextDate);
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-        const isHolidayDate = isHoliday(nextDate);
-
-        if (!isWeekend && !isHolidayDate) {
+        if (isBusinessDay(nextDate)) {
             return nextDate;
         }
         nextDate = addDays(nextDate, 1);
