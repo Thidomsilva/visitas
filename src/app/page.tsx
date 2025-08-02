@@ -39,8 +39,8 @@ type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
 function deserializeClient(client: Client): Client {
   const toDate = (timestamp: any): Date | null => {
     if (!timestamp) return null;
-    if (timestamp instanceof Timestamp) return timestamp.toDate();
     if (timestamp instanceof Date) return timestamp;
+    if (timestamp instanceof Timestamp) return timestamp.toDate();
     // Tenta converter de string ou número, se aplicável
     const d = new Date(timestamp);
     return isNaN(d.getTime()) ? null : d;
@@ -106,12 +106,9 @@ function DashboardPageContent() {
   useEffect(() => {
     const q = collection(db, "clients");
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      if (querySnapshot.metadata.hasPendingWrites) {
-        return;
-      }
       const clientsData = querySnapshot.docs.map(doc => deserializeClient({ id: doc.id, ...doc.data() } as Client));
       setClients(clientsData);
-      setIsLoading(false);
+      if (isLoading) setIsLoading(false);
     }, (error) => {
         console.error("Erro ao buscar clientes: ", error);
         toast({
@@ -122,7 +119,7 @@ function DashboardPageContent() {
         setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [toast]);
+  }, [toast, isLoading]);
 
   const handleSeedDatabase = async () => {
     setIsSeeding(true);
@@ -197,20 +194,20 @@ function DashboardPageContent() {
 
   const filteredClients = useMemo(() => {
     let sortedClients = [...clientsForStats].sort((a, b) => {
+      // 1. Critical status is the highest priority
       if (a.isCritical && !b.isCritical) return -1;
       if (!a.isCritical && b.isCritical) return 1;
 
-      const statusA = getVisitStatus(a.nextVisitDate as Date | null);
-      const statusB = getVisitStatus(b.nextVisitDate as Date | null);
+      // 2. Sort by visit status (overdue, approaching, on-schedule)
+      const statusA = getVisitStatus(a.nextVisitDate);
+      const statusB = getVisitStatus(b.nextVisitDate);
+      const statusOrder: Record<VisitStatus, number> = { 'overdue': 1, 'approaching': 2, 'on-schedule': 3, 'no-visits': 4 };
+      if (statusOrder[statusA] < statusOrder[statusB]) return -1;
+      if (statusOrder[statusA] > statusOrder[statusB]) return 1;
 
-      if (statusA === 'overdue' && statusB !== 'overdue') return -1;
-      if (statusB === 'overdue' && statusA !== 'overdue') return 1;
-      if (statusA === 'approaching' && statusB !== 'approaching') return -1;
-      if (statusB === 'approaching' && statusA !== 'approaching') return 1;
-
-      const dateA = a.nextVisitDate ? (a.nextVisitDate as Date).getTime() : Infinity;
-      const dateB = b.nextVisitDate ? (b.nextVisitDate as Date).getTime() : Infinity;
-      
+      // 3. Sort by next visit date (earlier first)
+      const dateA = a.nextVisitDate ? a.nextVisitDate.getTime() : Infinity;
+      const dateB = b.nextVisitDate ? b.nextVisitDate.getTime() : Infinity;
       return dateA - dateB;
     });
 
@@ -315,7 +312,6 @@ function DashboardPageContent() {
       dateToCalculateFrom = new Date();
     } else {
       // Ao deixar de ser crítico, recalcula a partir da última visita ou da criação
-      // As datas já estão como objetos Date por causa do deserializeClient
       dateToCalculateFrom = client.lastVisitDate || client.createdAt;
     }
   
