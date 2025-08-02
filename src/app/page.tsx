@@ -129,21 +129,20 @@ function DashboardPageContent() {
             const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
 
             const projectedVisits: Visit[] = [];
-            let currentVisitDate = creationDate;
+            let lastSimulatedVisitDate = creationDate;
 
-            while (currentVisitDate <= endDate) {
-                 const nextSimulatedVisitDate = calculateNextVisitDate(currentVisitDate, clientData.classification, clientData.isCritical);
+            while (lastSimulatedVisitDate <= endDate) {
+                 const nextSimulatedVisitDate = calculateNextVisitDate(lastSimulatedVisitDate, clientData.classification, clientData.isCritical);
                  if (nextSimulatedVisitDate > endDate) break;
-
-                 currentVisitDate = nextSimulatedVisitDate;
                  
                  projectedVisits.push({
                      id: crypto.randomUUID(),
-                     date: Timestamp.fromDate(currentVisitDate),
+                     date: Timestamp.fromDate(nextSimulatedVisitDate),
                      feedback: "Visita simulada automaticamente pelo sistema.",
                      followUp: "Nenhum acompanhamento necessário para visita simulada.",
                      registeredBy: clientData.responsavel
                  });
+                 lastSimulatedVisitDate = nextSimulatedVisitDate;
             }
 
             const lastProjectedVisit = projectedVisits.length > 0 ? projectedVisits[projectedVisits.length - 1] : null;
