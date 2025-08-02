@@ -16,7 +16,7 @@ import { ClientDetail } from "@/components/client-detail";
 import { CalendarView } from "@/components/calendar-view";
 import { AnalyticsView } from "@/components/analytics-view";
 import { cn } from "@/lib/utils";
-import { addDays, format } from "date-fns";
+import { addDays, format, isAfter, endOfDay } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { getInitialClientsForSeed } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
@@ -132,43 +132,42 @@ function DashboardPageContent() {
             toast({ title: "Banco de dados limpo", description: "Clientes anteriores foram removidos com sucesso." });
         }
         
-        // Aguardar um pouco para garantir que o onSnapshot processe a deleção
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         // 2. Popular com os novos dados, agendando apenas a primeira visita
         const initialClients = getInitialClientsForSeed();
+        if(initialClients.length === 0) {
+           toast({
+                title: "Banco de dados limpo!",
+                description: "O sistema está pronto para receber novos clientes.",
+            });
+            setIsSeeding(false);
+            return;
+        }
+        
         let clientsAddedCount = 0;
 
         for (const clientData of initialClients) {
             const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
             
-            // Calcula apenas a primeira visita a partir da data de criação
             const nextVisitDate = calculateNextVisitDate(creationDate, clientData.classification, clientData.isCritical);
 
             const clientToAdd = {
                 ...clientData,
                 createdAt: Timestamp.fromDate(creationDate),
-                lastVisitDate: null, // Começa sem visita anterior
+                lastVisitDate: null, 
                 nextVisitDate: Timestamp.fromDate(nextVisitDate),
-                visits: [], // Começa com histórico de visitas vazio
+                visits: [], 
             };
             
             await addDoc(clientsCollectionRef, clientToAdd);
             clientsAddedCount++;
         }
 
-        if (clientsAddedCount > 0) {
-            toast({
-                title: "Sucesso!",
-                description: `${clientsAddedCount} clientes foram cadastrados e a primeira visita de cada um foi agendada.`,
-            });
-        } else {
-             toast({
-                title: "Banco de dados limpo!",
-                description: "O sistema está pronto para receber novos clientes.",
-            });
-        }
+        toast({
+            title: "Sucesso!",
+            description: `${clientsAddedCount} clientes foram cadastrados e a primeira visita de cada um foi agendada.`,
+        });
 
     } catch (error) {
         console.error("Erro ao popular banco de dados:", error);
@@ -292,15 +291,24 @@ function DashboardPageContent() {
     if (!client) return;
 
     const newCriticalStatus = !client.isCritical;
-    // Calculate the next visit from TODAY, not from the last visit or creation date.
-    const dateToCalculateFrom = new Date();
+    
+    let dateToCalculateFrom: Date;
+
+    if (newCriticalStatus) {
+      // Ao se tornar crítico, calcula a partir de hoje
+      dateToCalculateFrom = new Date();
+    } else {
+      // Ao deixar de ser crítico, recalcula a partir da última visita ou da criação
+      dateToCalculateFrom = client.lastVisitDate ? (client.lastVisitDate as Date) : (client.createdAt as Date);
+    }
+
     const nextVisitDate = calculateNextVisitDate(dateToCalculateFrom, client.classification, newCriticalStatus);
 
     await updateDoc(clientRef, {
       isCritical: newCriticalStatus,
       nextVisitDate: Timestamp.fromDate(nextVisitDate),
     });
-  }
+};
 
   const selectedClient = useMemo(() => {
     if (!selectedClientId) return null;
@@ -496,7 +504,3 @@ export default function DashboardPage() {
 
   return <DashboardPageContent />;
 }
-
-    
-
-    
