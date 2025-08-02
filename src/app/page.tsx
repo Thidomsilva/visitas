@@ -16,9 +16,9 @@ import { ClientDetail } from "@/components/client-detail";
 import { CalendarView } from "@/components/calendar-view";
 import { AnalyticsView } from "@/components/analytics-view";
 import { cn } from "@/lib/utils";
-import { addDays, format, isAfter, endOfDay } from "date-fns";
+import { addDays, format, isAfter, endOfDay, getDay, isSameDay } from "date-fns";
 import { ptBR } from 'date-fns/locale';
-import { getInitialClientsForSeed } from "@/lib/data";
+import { getInitialClientsForSeed, nationalHolidays } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -41,7 +41,6 @@ function deserializeClient(client: Client): Client {
     if (!timestamp) return null;
     if (timestamp instanceof Date) return timestamp;
     if (timestamp instanceof Timestamp) return timestamp.toDate();
-    // Tenta converter de string ou número, se aplicável
     const d = new Date(timestamp);
     return isNaN(d.getTime()) ? null : d;
   };
@@ -50,18 +49,38 @@ function deserializeClient(client: Client): Client {
     ...client,
     lastVisitDate: toDate(client.lastVisitDate),
     nextVisitDate: toDate(client.nextVisitDate),
-    createdAt: toDate(client.createdAt) as Date, // createdAt deve sempre existir
+    createdAt: toDate(client.createdAt) as Date,
     visits: client.visits.map(v => ({ ...v, date: toDate(v.date) as Date })),
   };
 }
 
+const holidaysDateObjects = nationalHolidays.map(holiday => new Date(holiday + 'T12:00:00'));
+
+const isHoliday = (date: Date): boolean => {
+    return holidaysDateObjects.some(holiday => isSameDay(date, holiday));
+}
+
+const findNextBusinessDay = (date: Date): Date => {
+    let nextDate = new Date(date);
+    while (true) {
+        const dayOfWeek = getDay(nextDate);
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        const isHolidayDate = isHoliday(nextDate);
+
+        if (!isWeekend && !isHolidayDate) {
+            return nextDate;
+        }
+        nextDate = addDays(nextDate, 1);
+    }
+};
 
 const calculateNextVisitDate = (lastVisit: Date, classification: ClientClassification, isCritical?: boolean): Date => {
     const criticalInterval = { min: 7, max: 7 };
     const interval = isCritical ? criticalInterval : classificationIntervals[classification];
     const daysToAdd = Math.floor(Math.random() * (interval.max - interval.min + 1)) + interval.min;
     let nextDate = addDays(lastVisit, daysToAdd);
-    return nextDate;
+    
+    return findNextBusinessDay(nextDate);
   };
 
 function DashboardSkeleton() {
@@ -106,8 +125,27 @@ function DashboardPageContent() {
   useEffect(() => {
     const q = collection(db, "clients");
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const clientsData = querySnapshot.docs.map(doc => deserializeClient({ id: doc.id, ...doc.data() } as Client));
-      setClients(clientsData);
+      const clientsData = querySnapshot.docChanges().map(change => {
+        return deserializeClient({ id: change.doc.id, ...change.doc.data() } as Client);
+      });
+      
+      setClients(prevClients => {
+        let newClients = [...prevClients];
+        clientsData.forEach(changedClient => {
+          const index = newClients.findIndex(c => c.id === changedClient.id);
+          if (index > -1) {
+            if (querySnapshot.docChanges().find(c => c.doc.id === changedClient.id)?.type === 'removed') {
+              newClients.splice(index, 1);
+            } else {
+              newClients[index] = changedClient;
+            }
+          } else {
+            newClients.push(changedClient);
+          }
+        });
+        return newClients;
+      });
+
       if (isLoading) setIsLoading(false);
     }, (error) => {
         console.error("Erro ao buscar clientes: ", error);
@@ -198,17 +236,21 @@ function DashboardPageContent() {
       if (a.isCritical && !b.isCritical) return -1;
       if (!a.isCritical && b.isCritical) return 1;
 
-      // 2. Sort by visit status (overdue, approaching, on-schedule)
-      const statusA = getVisitStatus(a.nextVisitDate);
-      const statusB = getVisitStatus(b.nextVisitDate);
-      const statusOrder: Record<VisitStatus, number> = { 'overdue': 1, 'approaching': 2, 'on-schedule': 3, 'no-visits': 4 };
-      if (statusOrder[statusA] < statusOrder[statusB]) return -1;
-      if (statusOrder[statusA] > statusOrder[statusB]) return 1;
+      // If both are critical or not critical, then apply other sorting rules
+      if (a.isCritical === b.isCritical) {
+        // 2. Sort by visit status (overdue, approaching, on-schedule)
+        const statusA = getVisitStatus(a.nextVisitDate);
+        const statusB = getVisitStatus(b.nextVisitDate);
+        const statusOrder: Record<VisitStatus, number> = { 'overdue': 1, 'approaching': 2, 'on-schedule': 3, 'no-visits': 4 };
+        if (statusOrder[statusA] < statusOrder[statusB]) return -1;
+        if (statusOrder[statusA] > statusOrder[statusB]) return 1;
 
-      // 3. Sort by next visit date (earlier first)
-      const dateA = a.nextVisitDate ? a.nextVisitDate.getTime() : Infinity;
-      const dateB = b.nextVisitDate ? b.nextVisitDate.getTime() : Infinity;
-      return dateA - dateB;
+        // 3. Sort by next visit date (earlier first)
+        const dateA = a.nextVisitDate ? a.nextVisitDate.getTime() : Infinity;
+        const dateB = b.nextVisitDate ? b.nextVisitDate.getTime() : Infinity;
+        return dateA - dateB;
+      }
+      return 0;
     });
 
     if (filter !== 'all') {
@@ -243,11 +285,11 @@ function DashboardPageContent() {
     const client = clients.find(c => c.id === clientId);
     if (!client) return;
   
-    const visitDate = visit.date instanceof Date ? visit.date : new Date();
+    const visitDate = visit.date as Date;
     const newVisit = { ...visit, date: Timestamp.fromDate(visitDate) };
     
     const clientVisitsAsTimestamps = client.visits.map(v => {
-      const vDate = v.date instanceof Date ? v.date : new Date();
+      const vDate = v.date as Date;
       return {...v, date: Timestamp.fromDate(vDate)};
     });
   
@@ -265,12 +307,14 @@ function DashboardPageContent() {
 
   const handleScheduleMeeting = async (clientId: string, newDate: Date) => {
     const clientRef = doc(db, "clients", clientId);
+    const nextBusinessDay = findNextBusinessDay(newDate);
+
     await updateDoc(clientRef, {
-      nextVisitDate: Timestamp.fromDate(newDate),
+      nextVisitDate: Timestamp.fromDate(nextBusinessDay),
     });
      toast({
       title: "Reunião Agendada!",
-      description: `A próxima visita para o cliente foi agendada para ${format(newDate, 'PPP', { locale: ptBR })}.`
+      description: `A próxima visita para o cliente foi agendada para ${format(nextBusinessDay, 'PPP', { locale: ptBR })}.`
     })
   };
 
@@ -299,14 +343,14 @@ function DashboardPageContent() {
     }
   }
 
-  const handleToggleCriticalStatus = async (clientId: string) => {
+ const handleToggleCriticalStatus = async (clientId: string) => {
     const clientRef = doc(db, "clients", clientId);
     const client = clients.find(c => c.id === clientId);
     if (!client) return;
-  
+
     const newCriticalStatus = !client.isCritical;
     let dateToCalculateFrom: Date;
-  
+
     if (newCriticalStatus) {
       // Ao se tornar crítico, calcula a partir de hoje
       dateToCalculateFrom = new Date();
@@ -314,9 +358,9 @@ function DashboardPageContent() {
       // Ao deixar de ser crítico, recalcula a partir da última visita ou da criação
       dateToCalculateFrom = client.lastVisitDate || client.createdAt;
     }
-  
+
     const nextVisitDate = calculateNextVisitDate(dateToCalculateFrom, client.classification, newCriticalStatus);
-  
+
     await updateDoc(clientRef, {
       isCritical: newCriticalStatus,
       nextVisitDate: Timestamp.fromDate(nextVisitDate),
@@ -517,5 +561,3 @@ export default function DashboardPage() {
 
   return <DashboardPageContent />;
 }
-
-    

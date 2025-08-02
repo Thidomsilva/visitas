@@ -52,6 +52,38 @@ const clientsData: { name: string, unit: 'LONDRINA' | 'CURITIBA', classification
   { name: 'ZM HOSPITALAR', unit: 'LONDRINA', classification: 'B' },
 ];
 
+export const nationalHolidays: string[] = [
+    // 2024
+    '2024-01-01', // Confraternização Universal
+    '2024-02-12', // Carnaval (Ponto Facultativo)
+    '2024-02-13', // Carnaval (Ponto Facultativo)
+    '2024-02-14', // Quarta-feira de Cinzas (Ponto Facultativo até 14h)
+    '2024-03-29', // Paixão de Cristo
+    '2024-04-21', // Tiradentes
+    '2024-05-01', // Dia do Trabalho
+    '2024-05-30', // Corpus Christi (Ponto Facultativo)
+    '2024-09-07', // Independência do Brasil
+    '2024-10-12', // Nossa Senhora Aparecida
+    '2024-11-02', // Finados
+    '2024-11-15', // Proclamação da República
+    '2024-12-25', // Natal
+    // 2025
+    '2025-01-01', // Confraternização Universal
+    '2025-03-03', // Carnaval (Ponto Facultativo)
+    '2025-03-04', // Carnaval (Ponto Facultativo)
+    '2025-03-05', // Quarta-feira de Cinzas (Ponto Facultativo até 14h)
+    '2025-04-18', // Paixão de Cristo
+    '2025-04-21', // Tiradentes
+    '2025-05-01', // Dia do Trabalho
+    '2025-06-19', // Corpus Christi (Ponto Facultativo)
+    '2025-09-07', // Independência do Brasil
+    '2025-10-12', // Nossa Senhora Aparecida
+    '2025-11-02', // Finados
+    '2025-11-15', // Proclamação da República
+    '2025-12-25', // Natal
+];
+
+
 export const getResponsavel = (unit: string, classification: ClientClassification): string => {
     if (unit === 'CURITIBA') {
         return 'Marcos';
