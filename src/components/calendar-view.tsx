@@ -14,10 +14,10 @@ import { Button } from './ui/button';
 import { ArrowLeft } from 'lucide-react';
 
 const statusIndicatorConfig = {
-  'overdue': 'bg-red-200 text-red-800 border-red-400',
-  'approaching': 'bg-yellow-200 text-yellow-800 border-yellow-400',
-  'on-schedule': 'bg-green-200 text-green-800 border-green-400',
-  'no-visits': 'bg-gray-200 text-gray-800 border-gray-400',
+  'overdue': 'border-red-500',
+  'approaching': 'border-yellow-500',
+  'on-schedule': 'border-green-500',
+  'no-visits': 'border-gray-400',
 };
 
 
@@ -37,10 +37,10 @@ function CustomDay(props: DayProps & { clientsOnThisDay: Client[]; onClientClick
     
     return (
         <div className={cn("h-full flex flex-col p-1", !isSameDay(date, displayMonth) && "text-muted-foreground/50")}>
-            <time dateTime={date.toISOString()} className={cn("text-right text-xs md:text-sm", isSameDay(date, new Date()) && "font-bold text-primary")}>
+            <time dateTime={date.toISOString()} className={cn("text-right text-xs md:text-sm p-1", isSameDay(date, new Date()) && "font-bold text-primary")}>
                 {format(date, 'd')}
             </time>
-            <div className="flex-1 -mt-1 overflow-y-auto">
+            <ScrollArea className="flex-1 -mt-1 overflow-y-auto">
                 <div className="space-y-1 p-1">
                 {clientsOnThisDay.map(client => {
                     const status = getVisitStatus(client.nextVisitDate as Date | null);
@@ -49,17 +49,17 @@ function CustomDay(props: DayProps & { clientsOnThisDay: Client[]; onClientClick
                         key={client.id}
                         onClick={() => onClientClick(client.id)}
                         className={cn(
-                        "w-full text-left p-1 rounded-md border text-[10px] md:text-xs leading-tight transition-all",
+                        "w-full text-left p-1 rounded-md border-l-4 bg-card hover:bg-muted transition-all text-[10px] md:text-xs leading-tight",
                          statusIndicatorConfig[status],
-                         'hover:shadow-md'
+                         'hover:shadow-sm'
                         )}
                     >
-                        <p className="font-semibold">{client.name}</p>
+                        <p className="font-semibold truncate pl-1">{client.name}</p>
                     </button>
                     )
                 })}
                 </div>
-            </div>
+            </ScrollArea>
         </div>
     );
 }
