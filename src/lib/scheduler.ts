@@ -35,6 +35,7 @@ export function generateSchedule(clients: Client[], startIndex = 0): Client[] {
   const updatedClients = [...clients];
 
   const startDate = new Date('2025-08-05T00:00:00');
+  const startDateCurveA = new Date('2025-08-12T00:00:00');
   const endDate = new Date('2025-12-31T23:59:59');
 
   // Populate schedule with existing visits from the initial part of the array
@@ -49,7 +50,9 @@ export function generateSchedule(clients: Client[], startIndex = 0): Client[] {
   // Schedule visits for each client starting from the startIndex
   for (let i = startIndex; i < updatedClients.length; i++) {
     const client = { ...updatedClients[i] };
-    let lastVisitDate = client.lastVisitDate ? new Date(client.lastVisitDate) : startDate;
+    
+    let initialDate = client.classification === 'A' ? startDateCurveA : startDate;
+    let lastVisitDate = client.lastVisitDate ? new Date(client.lastVisitDate) : initialDate;
 
     // Clear future visits if we are rescheduling
     if (startIndex > 0 && client.lastVisitDate) {
