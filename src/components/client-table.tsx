@@ -32,50 +32,52 @@ export function ClientTable({ clients, onVisitLogged, onDeleteClient }: ClientTa
 
   return (
     <div className="w-full">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Consultor</TableHead>
-            <TableHead>Curva</TableHead>
-            <TableHead>Última Visita</TableHead>
-            <TableHead>Próxima Visita</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {clients.map((client) => {
-             const status = getVisitStatus(client.nextVisitDate);
-            return (
-              <TableRow key={client.id}>
-                <TableCell>
-                  <div className="font-medium">{client.name}</div>
-                  <div className="text-sm text-muted-foreground">{client.contact}</div>
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={status} />
-                </TableCell>
-                 <TableCell>{client.consultant}</TableCell>
-                <TableCell>Classe {client.classification}</TableCell>
-                <TableCell>
-                  {client.lastVisitDate ? format(client.lastVisitDate, 'PPP', { locale: ptBR }) : 'N/D'}
-                </TableCell>
-                <TableCell>
-                  {client.nextVisitDate ? format(client.nextVisitDate, 'PPP', { locale: ptBR }) : 'N/D'}
-                </TableCell>
-                <TableCell className="text-right">
-                   <ClientTableRowActions 
-                      client={client} 
-                      onVisitLogged={onVisitLogged} 
-                      onDelete={onDeleteClient}
-                    />
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Consultor</TableHead>
+              <TableHead>Curva</TableHead>
+              <TableHead>Última Visita</TableHead>
+              <TableHead>Próxima Visita</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {clients.map((client) => {
+              const status = getVisitStatus(client.nextVisitDate);
+              return (
+                <TableRow key={client.id}>
+                  <TableCell>
+                    <div className="font-medium">{client.name}</div>
+                    <div className="text-sm text-muted-foreground">{client.contact}</div>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={status} />
+                  </TableCell>
+                  <TableCell>{client.consultant}</TableCell>
+                  <TableCell>Classe {client.classification}</TableCell>
+                  <TableCell>
+                    {client.lastVisitDate ? format(client.lastVisitDate, 'PPP', { locale: ptBR }) : 'N/D'}
+                  </TableCell>
+                  <TableCell>
+                    {client.nextVisitDate ? format(client.nextVisitDate, 'PPP', { locale: ptBR }) : 'N/D'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <ClientTableRowActions 
+                        client={client} 
+                        onVisitLogged={onVisitLogged} 
+                        onDelete={onDeleteClient}
+                      />
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
