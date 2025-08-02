@@ -49,16 +49,25 @@ const clientsData: { name: string, unit: string, classification: ClientClassific
   { name: 'ZM HOSPITALAR', unit: 'LONDRINA', classification: 'B' },
 ];
 
-const getResponsavel = (unit: string): string => {
+const getResponsavel = (unit: string, classification: ClientClassification): string => {
     if (unit === 'CURITIBA') {
         return 'Marcos';
     }
-    // Randomly assign between Thiago and Vandreia for LONDRINA
-    return Math.random() > 0.5 ? 'Thiago' : 'Vandreia';
+
+    if (unit === 'LONDRINA') {
+        if (classification === 'A') {
+            return 'Thiago';
+        } else {
+            return 'Vandreia';
+        }
+    }
+    
+    // Fallback for any other unit
+    return 'Indefinido';
 };
 
 export const initialClients: Client[] = clientsData.map((clientData, index) => {
-    const responsavel = getResponsavel(clientData.unit);
+    const responsavel = getResponsavel(clientData.unit, clientData.classification);
     const client: Client = {
         id: `${index + 1}`,
         name: clientData.name,
