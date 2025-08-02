@@ -32,7 +32,7 @@ type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
 function DashboardSkeleton() {
   return (
      <div className="min-h-screen bg-background flex flex-col">
-      <DashboardHeader onAddClient={() => {}} onViewChange={() => {}} onSeedDatabase={() => {}} isSeeding={false} view="dashboard"/>
+      <DashboardHeader onAddClient={() => {}} onViewChange={() => {}} />
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         <div className="w-full md:w-80 border-b md:border-b-0 md:border-r p-4 space-y-4">
           <Skeleton className="h-10 w-full" />
@@ -59,7 +59,6 @@ function DashboardSkeleton() {
 function DashboardPageContent() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSeeding, setIsSeeding] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [unitFilter, setUnitFilter] = useState<UnitFilterType>('all');
@@ -89,70 +88,6 @@ function DashboardPageContent() {
     });
     return () => unsubscribe();
   }, [toast, isLoading]);
-
-  const handleSeedDatabase = async () => {
-    setIsSeeding(true);
-    toast({ title: "Iniciando processo...", description: "Limpando o banco de dados e preparando para popular. Isso pode levar alguns instantes." });
-
-    try {
-        const clientsCollectionRef = collection(db, "clients");
-        const existingClientsSnapshot = await getDocs(query(clientsCollectionRef));
-        if (!existingClientsSnapshot.empty) {
-            const deleteBatch = writeBatch(db);
-            existingClientsSnapshot.docs.forEach(doc => {
-                deleteBatch.delete(doc.ref);
-            });
-            await deleteBatch.commit();
-            toast({ title: "Banco de dados limpo", description: "Clientes anteriores foram removidos com sucesso." });
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const initialClients = getInitialClientsForSeed();
-        if(initialClients.length === 0) {
-           toast({
-                title: "Banco de dados limpo!",
-                description: "O sistema está pronto para receber novos clientes.",
-            });
-            setIsSeeding(false);
-            return;
-        }
-        
-        let clientsAddedCount = 0;
-
-        for (const clientData of initialClients) {
-            const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
-            
-            const nextVisitDate = calculateNextVisitDate(creationDate, clientData.classification, clientData.isCritical);
-
-            const clientToAdd = {
-                ...clientData,
-                createdAt: Timestamp.fromDate(creationDate),
-                lastVisitDate: null, 
-                nextVisitDate: Timestamp.fromDate(nextVisitDate),
-                visits: [], 
-            };
-            
-            await addDoc(clientsCollectionRef, clientToAdd);
-            clientsAddedCount++;
-        }
-
-        toast({
-            title: "Sucesso!",
-            description: `${clientsAddedCount} clientes foram cadastrados e a primeira visita de cada um foi agendada.`,
-        });
-
-    } catch (error) {
-        console.error("Erro ao popular banco de dados:", error);
-        toast({
-            title: "Erro ao Popular Banco de Dados",
-            description: "Ocorreu um erro ao cadastrar os clientes iniciais. Verifique o console para mais detalhes.",
-            variant: "destructive"
-        });
-    } finally {
-        setIsSeeding(false);
-    }
-  };
 
 
   const clientsForStats = useMemo(() => {
@@ -504,8 +439,6 @@ function DashboardPageContent() {
             onAddClient={() => setAddClientOpen(true)}
             view={view}
             onViewChange={setView}
-            onSeedDatabase={handleSeedDatabase}
-            isSeeding={isSeeding}
         />
         {renderView()}
       </div>
@@ -534,5 +467,3 @@ export default function DashboardPage() {
 
   return <DashboardPageContent />;
 }
-
-    
