@@ -138,11 +138,12 @@ function DashboardPageContent() {
 
                 if (nextProjectedDate > endDate) break;
 
+                // Check and enforce the daily visit limit
                 let visitDateKey = format(nextProjectedDate, 'yyyy-MM-dd');
                 while ((dailyVisitCount.get(visitDateKey) || 0) >= 2) {
                     nextProjectedDate = addDays(nextProjectedDate, 1);
-                    if (nextProjectedDate > endDate) break;
                     visitDateKey = format(nextProjectedDate, 'yyyy-MM-dd');
+                    if (nextProjectedDate > endDate) break;
                 }
                 
                 if (nextProjectedDate > endDate) break;
