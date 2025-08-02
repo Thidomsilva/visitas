@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp, writeBatch, getDocs, query } from "firebase/firestore";
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp, getDocs, query, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { classificationIntervals, type Client, type Visit, type VisitStatus, ClientClassification } from "@/lib/types";
 import { getVisitStatus } from "@/lib/utils";
@@ -123,23 +123,21 @@ function DashboardPageContent() {
         }
 
         const initialClients = getInitialClientsForSeed();
-        const batch = writeBatch(db);
         const endDate = new Date('2025-12-31');
         const dailyVisitCount = new Map<string, number>();
 
-        initialClients.forEach(clientData => {
+        for (const clientData of initialClients) {
             const docRef = doc(clientsCollectionRef);
             const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
             let currentVisitDate = creationDate;
 
             const projectedVisits: Visit[] = [];
-
+            
             while (currentVisitDate <= endDate) {
                 let nextProjectedDate = calculateNextVisitDate(currentVisitDate, clientData.classification, clientData.isCritical);
 
                 if (nextProjectedDate > endDate) break;
 
-                // Respect the 2-visits-per-day rule
                 let visitDateKey = format(nextProjectedDate, 'yyyy-MM-dd');
                 while ((dailyVisitCount.get(visitDateKey) || 0) >= 2) {
                     nextProjectedDate = addDays(nextProjectedDate, 1);
@@ -174,10 +172,11 @@ function DashboardPageContent() {
                 nextVisitDate: Timestamp.fromDate(nextVisitDateAfterProjection),
                 visits: projectedVisits,
             };
-            batch.set(docRef, clientToAdd);
-        });
+            
+            // Save each client individually
+            await setDoc(docRef, clientToAdd);
+        }
 
-        await batch.commit();
         toast({
             title: "Sucesso!",
             description: `${initialClients.length} clientes e suas visitas projetadas foram cadastrados.`,
@@ -509,9 +508,3 @@ export default function DashboardPage() {
 
   return <DashboardPageContent />;
 }
-
-    
-
-    
-
-
