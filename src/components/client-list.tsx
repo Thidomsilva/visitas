@@ -3,7 +3,7 @@
 
 import { cn } from "@/lib/utils";
 import { getVisitStatus } from "@/lib/utils";
-import type { Client, VisitStatus } from "@/lib/types";
+import type { Client, VisitStatus, ClientClassification } from "@/lib/types";
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,20 +17,30 @@ const statusIndicatorConfig = {
   'no-visits': 'bg-gray-400',
 };
 
+type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
+
 interface ClientListProps {
   clients: Client[];
   selectedClientId: string | null;
   onSelectClient: (id: string) => void;
-  filter: string;
-  onFilterChange: (value: string) => void;
+  filter: FilterType;
+  onFilterChange: (value: FilterType) => void;
 }
 
 export function ClientList({ clients, selectedClientId, onSelectClient, filter, onFilterChange }: ClientListProps) {
+  
+  const getTabValue = () => {
+    if (filter.startsWith('class-')) {
+      return 'all'; // Don't highlight any tab if filtering by classification
+    }
+    return filter;
+  }
+  
   return (
     <div className="w-full max-w-xs border-r flex flex-col bg-slate-50/50 dark:bg-slate-900/50">
        <div className="p-4">
         <h2 className="text-xl font-bold">Clientes ({clients.length})</h2>
-        <Tabs value={filter} onValueChange={onFilterChange} className="mt-4">
+        <Tabs value={getTabValue()} onValueChange={(val) => onFilterChange(val as FilterType)} className="mt-4">
             <TabsList className="grid w-full grid-cols-3 h-auto flex-wrap">
               <TabsTrigger value="all" className="flex-1">Todos</TabsTrigger>
               <TabsTrigger value="on-schedule" className="flex-1">Em Dia</TabsTrigger>
@@ -81,3 +91,5 @@ export function ClientList({ clients, selectedClientId, onSelectClient, filter, 
     </div>
   )
 }
+
+    

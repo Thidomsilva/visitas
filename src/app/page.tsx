@@ -14,8 +14,9 @@ import { AddClientDialog } from "@/components/add-client-dialog";
 import { ClientList } from "@/components/client-list";
 import { ClientDetail } from "@/components/client-detail";
 import { generateSchedule } from "@/lib/scheduler";
+import { cn } from "@/lib/utils";
 
-type FilterType = "all" | VisitStatus;
+type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
 
 export default function DashboardPage() {
   const [clients, setClients] = useState<Client[]>(() => generateSchedule(initialClients));
@@ -49,6 +50,12 @@ export default function DashboardPage() {
     });
     
     if (filter === 'all') return sortedClients;
+
+    if (filter.startsWith('class-')) {
+      const classification = filter.split('-')[1] as ClientClassification;
+      return sortedClients.filter(client => client.classification === classification);
+    }
+    
     return sortedClients.filter(client => getVisitStatus(client.nextVisitDate) === filter);
   }, [clients, filter]);
   
@@ -165,6 +172,10 @@ export default function DashboardPage() {
   if (!isMounted) {
     return <DashboardSkeleton />;
   }
+  
+  const handleFilterChange = (newFilter: FilterType) => {
+    setFilter(currentFilter => currentFilter === newFilter ? 'all' : newFilter);
+  };
 
   return (
     <>
@@ -180,7 +191,10 @@ export default function DashboardPage() {
             />
           <main className="flex-1 flex flex-col p-6 overflow-y-auto">
              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
-              <Card>
+              <Card
+                className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'class-A' && 'ring-2 ring-primary')}
+                onClick={() => handleFilterChange('class-A')}
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Clientes Classe A</CardTitle>
                   <Gem className="h-4 w-4 text-blue-500" />
@@ -190,7 +204,10 @@ export default function DashboardPage() {
                   <p className="text-xs text-muted-foreground">do total de {clients.length} clientes</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card
+                className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'class-B' && 'ring-2 ring-primary')}
+                onClick={() => handleFilterChange('class-B')}
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Clientes Classe B</CardTitle>
                   <Diamond className="h-4 w-4 text-purple-500" />
@@ -200,7 +217,10 @@ export default function DashboardPage() {
                    <p className="text-xs text-muted-foreground">do total de {clients.length} clientes</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card
+                className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'class-C' && 'ring-2 ring-primary')}
+                onClick={() => handleFilterChange('class-C')}
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Clientes Classe C</CardTitle>
                   <Star className="h-4 w-4 text-yellow-500" />
@@ -210,7 +230,10 @@ export default function DashboardPage() {
                    <p className="text-xs text-muted-foreground">do total de {clients.length} clientes</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card
+                className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'approaching' && 'ring-2 ring-primary')}
+                onClick={() => handleFilterChange('approaching')}
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Visitas Próximas</CardTitle>
                   <CalendarClock className="h-4 w-4 text-orange-500" />
@@ -265,3 +288,5 @@ function DashboardSkeleton() {
     </div>
   )
 }
+
+    
