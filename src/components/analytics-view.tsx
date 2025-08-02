@@ -3,7 +3,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend, Tooltip, LabelList } from 'recharts';
-import { format, parseISO, getMonth, getYear } from 'date-fns';
+import { format, parseISO, getMonth, getYear, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Client, ClientClassification, VisitStatus } from '@/lib/types';
 import { getVisitStatus } from '@/lib/utils';
@@ -37,20 +37,11 @@ export function AnalyticsView({ clients }: AnalyticsViewProps) {
   };
 
   const handleVisitsByMonthClick = (data: any) => {
-    if (!data) return;
-    const clickedMonth = data.activePayload[0].payload.month; // "Ago/25"
-    const [monthStr, yearStr] = clickedMonth.split('/');
-    const monthIndex = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'].indexOf(monthStr.toLowerCase());
-    const year = 2000 + parseInt(yearStr);
-
-    const filteredClients = clients.filter(client => {
-      return client.visits.some(visit => {
-        const visitDate = new Date(visit.date);
-        return getMonth(visitDate) === monthIndex && getYear(visitDate) === year;
-      });
-    });
+    if (!data || !data.activePayload?.[0]?.payload) return;
+    const payload = data.activePayload[0].payload;
+    const { month, clients: clientsForMonth } = payload;
     
-    openDialog(`Clientes com Visitas em ${data.activeLabel}`, filteredClients);
+    openDialog(`Clientes com Visitas Agendadas em ${month}`, clientsForMonth);
   };
 
   const handleClientsByResponsavelClick = (data: any) => {
@@ -76,22 +67,29 @@ export function AnalyticsView({ clients }: AnalyticsViewProps) {
     openDialog(`Visitas ${statusLabel} de ${responsavel}`, filteredClients);
   }
 
-  const visitsByMonth = useMemo(() => {
-    const monthCounts: { [key: string]: number } = {};
+  const scheduledVisitsByMonth = useMemo(() => {
+    const monthCounts: { [key: string]: { visits: number; clients: Client[] } } = {};
+
     clients.forEach(client => {
-      client.visits.forEach(visit => {
-        const month = format(new Date(visit.date), 'yyyy-MM');
-        monthCounts[month] = (monthCounts[month] || 0) + 1;
-      });
+      if (client.nextVisitDate && isAfter(client.nextVisitDate, new Date())) {
+        const monthKey = format(new Date(client.nextVisitDate), 'yyyy-MM');
+        if (!monthCounts[monthKey]) {
+          monthCounts[monthKey] = { visits: 0, clients: [] };
+        }
+        monthCounts[monthKey].visits++;
+        monthCounts[monthKey].clients.push(client);
+      }
     });
 
     return Object.entries(monthCounts)
       .sort(([monthA], [monthB]) => monthA.localeCompare(monthB))
-      .map(([month, count]) => ({
+      .map(([month, data]) => ({
         month: format(parseISO(`${month}-01`), 'MMM/yy', { locale: ptBR }),
-        visits: count,
+        visits: data.visits,
+        clients: data.clients,
       }));
   }, [clients]);
+
 
   const clientsByResponsavel = useMemo(() => {
     const responsavelData: { [key: string]: { name: string; A: number; B: number; C: number } } = {};
@@ -125,12 +123,12 @@ export function AnalyticsView({ clients }: AnalyticsViewProps) {
       <div className="flex-1 p-6 space-y-6 overflow-y-auto">
         <Card>
           <CardHeader>
-            <CardTitle>Visitas por Mês</CardTitle>
-            <CardDescription>Volume de visitas agendadas para os próximos meses.</CardDescription>
+            <CardTitle>Próximas Visitas por Mês</CardTitle>
+            <CardDescription>Volume de próximas visitas agendadas por mês.</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <BarChart data={visitsByMonth} accessibilityLayer onClick={handleVisitsByMonthClick}>
+              <BarChart data={scheduledVisitsByMonth} accessibilityLayer onClick={handleVisitsByMonthClick}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
                 <YAxis />
