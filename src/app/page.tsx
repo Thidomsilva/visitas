@@ -3,13 +3,13 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp, getDocs, query, setDoc, writeBatch, getDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp, getDocs, query, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { classificationIntervals, type Client, type Visit, type VisitStatus, ClientClassification } from "@/lib/types";
 import { getVisitStatus } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gem, Diamond, Star, CalendarClock, XCircle, CheckCircle2, Database } from 'lucide-react';
+import { Gem, Diamond, Star, CalendarClock, XCircle, CheckCircle2 } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddClientDialog } from "@/components/add-client-dialog";
 import { ClientList } from "@/components/client-list";
@@ -17,21 +17,10 @@ import { ClientDetail } from "@/components/client-detail";
 import { CalendarView } from "@/components/calendar-view";
 import { AnalyticsView } from "@/components/analytics-view";
 import { cn } from "@/lib/utils";
-import { addDays, format, isAfter, endOfDay, getDay, isSameDay } from "date-fns";
+import { addDays, format, isSameDay, getDay } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { getInitialClientsForSeed, nationalHolidays } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 
@@ -72,8 +61,9 @@ const holidaysDateObjects = nationalHolidays.map(holiday => {
 const isHoliday = (date: Date): boolean => {
     // Compare using UTC dates to be consistent
     const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    return holidaysDateObjects.some(holiday => isSameDay(utcDate, holiday));
+    return holidaysDateObjects.some(holidayDate => isSameDay(utcDate, holidayDate));
 };
+
 
 const findNextBusinessDay = (date: Date): Date => {
     let nextDate = new Date(date);
@@ -139,7 +129,7 @@ function DashboardPageContent() {
 
   useEffect(() => {
     const q = collection(db, "clients");
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (querySnapshot) => {
       const clientsData = querySnapshot.docs.map(doc => {
         return deserializeClient({ id: doc.id, ...doc.data() } as Client);
       });
@@ -235,22 +225,19 @@ function DashboardPageContent() {
       // 1. Critical status is the highest priority
       if (a.isCritical && !b.isCritical) return -1;
       if (!a.isCritical && b.isCritical) return 1;
-
+      
       // If both are critical or not critical, then apply other sorting rules
-      if (a.isCritical === b.isCritical) {
-        // 2. Sort by visit status (overdue, approaching, on-schedule)
-        const statusA = getVisitStatus(a.nextVisitDate);
-        const statusB = getVisitStatus(b.nextVisitDate);
-        const statusOrder: Record<VisitStatus, number> = { 'overdue': 1, 'approaching': 2, 'on-schedule': 3, 'no-visits': 4 };
-        if (statusOrder[statusA] < statusOrder[statusB]) return -1;
-        if (statusOrder[statusA] > statusOrder[statusB]) return 1;
+      // 2. Sort by visit status (overdue, approaching, on-schedule)
+      const statusA = getVisitStatus(a.nextVisitDate);
+      const statusB = getVisitStatus(b.nextVisitDate);
+      const statusOrder: Record<VisitStatus, number> = { 'overdue': 1, 'approaching': 2, 'on-schedule': 3, 'no-visits': 4 };
+      if (statusOrder[statusA] < statusOrder[statusB]) return -1;
+      if (statusOrder[statusA] > statusOrder[statusB]) return 1;
 
-        // 3. Sort by next visit date (earlier first)
-        const dateA = a.nextVisitDate ? a.nextVisitDate.getTime() : Infinity;
-        const dateB = b.nextVisitDate ? b.nextVisitDate.getTime() : Infinity;
-        return dateA - dateB;
-      }
-      return 0;
+      // 3. Sort by next visit date (earlier first)
+      const dateA = a.nextVisitDate ? a.nextVisitDate.getTime() : Infinity;
+      const dateB = b.nextVisitDate ? b.nextVisitDate.getTime() : Infinity;
+      return dateA - dateB;
     });
 
     if (filter !== 'all') {
