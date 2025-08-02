@@ -15,6 +15,8 @@ import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Input } from './ui/input';
+import { useEffect } from 'react';
 
 const visitSchema = z.object({
   feedback: z.string().min(10, 'O feedback deve ter pelo menos 10 caracteres.'),
@@ -22,6 +24,7 @@ const visitSchema = z.object({
   date: z.date({
     required_error: "A data da visita é obrigatória.",
   }),
+  registeredBy: z.string().min(2, "O nome do responsável é obrigatório."),
 });
 
 interface VisitLogDialogProps {
@@ -38,24 +41,39 @@ export function VisitLogDialog({ open, onOpenChange, client, onVisitLogged }: Vi
       feedback: '',
       followUp: '',
       date: new Date(),
+      registeredBy: client.responsavel || ''
     },
   });
+
+  useEffect(() => {
+    if (client) {
+      form.reset({
+        feedback: '',
+        followUp: '',
+        date: new Date(),
+        registeredBy: client.responsavel || ''
+      });
+    }
+  }, [client, open, form]);
+
 
   function onSubmit(values: z.infer<typeof visitSchema>) {
     const newVisit: Visit = {
       id: crypto.randomUUID(),
-      ...values,
-      registeredBy: client.responsavel,
+      date: values.date,
+      feedback: values.feedback,
+      followUp: values.followUp,
+      registeredBy: values.registeredBy,
     };
     onVisitLogged(newVisit);
-    form.reset({ date: new Date(), feedback: '', followUp: ''});
+    form.reset();
   }
   
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
         onOpenChange(isOpen);
         if (!isOpen) {
-            form.reset({ date: new Date(), feedback: '', followUp: ''});
+            form.reset();
         }
     }}>
       <DialogContent className="sm:max-w-[480px]">
@@ -104,6 +122,19 @@ export function VisitLogDialog({ open, onOpenChange, client, onVisitLogged }: Vi
                       />
                     </PopoverContent>
                   </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="registeredBy"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Registrado por</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nome do responsável pelo registro" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
