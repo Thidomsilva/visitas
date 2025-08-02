@@ -7,24 +7,28 @@ import { ptBR } from 'date-fns/locale';
 import { StatusBadge } from "./status-badge";
 import { getVisitStatus } from "@/lib/utils";
 import { Button } from "./ui/button";
-import { PlusCircle, Trash2, AlertTriangle, User, History, Save } from "lucide-react";
+import { PlusCircle, Trash2, AlertTriangle, Calendar as CalendarIcon, History } from "lucide-react";
 import { VisitHistoryDialog } from "./visit-history-dialog";
 import { useState, useMemo } from "react";
 import { VisitLogDialog } from "./visit-log-dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { Badge } from "./ui/badge";
 import { Textarea } from "./ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Calendar } from "./ui/calendar";
 
 interface ClientDetailProps {
   client: Client | null;
   onVisitLogged: (clientId: string, visit: Visit) => void;
   onDeleteClient: (clientId: string) => void;
   onToggleCriticalStatus: (clientId: string) => void;
+  onScheduleMeeting: (clientId: string, date: Date) => void;
 }
 
-export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCriticalStatus }: ClientDetailProps) {
+export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCriticalStatus, onScheduleMeeting }: ClientDetailProps) {
   const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [schedulePopoverOpen, setSchedulePopoverOpen] = useState(false);
   
   const status = useMemo(() => client ? getVisitStatus(client.nextVisitDate as Date | null) : 'no-visits', [client]);
   
@@ -36,6 +40,13 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
       ...visitData,
     };
     onVisitLogged(client.id, newVisit);
+  };
+  
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date && client) {
+      onScheduleMeeting(client.id, date);
+      setSchedulePopoverOpen(false);
+    }
   };
 
   if (!client) {
@@ -63,20 +74,38 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
                 </div>
                 <CardDescription className="mt-1">Unidade: {client.unit}</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 justify-end">
                 <Button 
                     variant={client.isCritical ? "destructive" : "outline"} 
                     onClick={() => onToggleCriticalStatus(client.id)}
+                    size="sm"
                 >
                     <AlertTriangle className="mr-2 h-4 w-4" /> 
                     {client.isCritical ? "Remover Criticidade" : "Marcar como Crítico"}
                  </Button>
-                 <Button variant="outline" onClick={() => setLogDialogOpen(true)}>
+                <Popover open={schedulePopoverOpen} onOpenChange={setSchedulePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <CalendarIcon className="mr-2 h-4 w-4" /> Agendar Reunião
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="single"
+                      selected={client.nextVisitDate ? new Date(client.nextVisitDate) : undefined}
+                      onSelect={handleDateSelect}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                 <Button variant="outline" onClick={() => setLogDialogOpen(true)} size="sm">
                     <PlusCircle className="mr-2 h-4 w-4" /> Registrar Visita
                  </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive-outline">
+                        <Button variant="destructive-outline" size="sm">
                             <Trash2 className="mr-2 h-4 w-4" /> Excluir
                         </Button>
                     </AlertDialogTrigger>

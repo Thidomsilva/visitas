@@ -262,6 +262,18 @@ function DashboardPageContent() {
     });
   };
 
+  const handleScheduleMeeting = async (clientId: string, newDate: Date) => {
+    const clientRef = doc(db, "clients", clientId);
+    await updateDoc(clientRef, {
+      nextVisitDate: Timestamp.fromDate(newDate),
+    });
+     toast({
+      title: "Reunião Agendada!",
+      description: `A próxima visita para o cliente foi agendada para ${format(newDate, 'PPP', { locale: ptBR })}.`
+    })
+  };
+
+
   const handleAddClient = async (newClient: Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits' | 'isCritical' | 'createdAt'>) => {
     const creationDate = new Date();
     const nextVisitDate = calculateNextVisitDate(creationDate, newClient.classification, false);
@@ -451,6 +463,7 @@ function DashboardPageContent() {
                 onVisitLogged={handleVisitLogged}
                 onDeleteClient={handleDeleteClient}
                 onToggleCriticalStatus={handleToggleCriticalStatus}
+                onScheduleMeeting={handleScheduleMeeting}
               />
             </main>
           </div>
