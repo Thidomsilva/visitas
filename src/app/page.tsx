@@ -100,7 +100,7 @@ export default function DashboardPage() {
     });
   };
 
-  const handleAddClient = (newClient: Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits'>) => {
+  const handleAddClient = (newClient: Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits' | 'isCritical'>) => {
     const clientToAdd: Client = {
       ...newClient,
       id: crypto.randomUUID(),
@@ -132,18 +132,24 @@ export default function DashboardPage() {
     setClients(prevClients => {
       const clientIndex = prevClients.findIndex(c => c.id === clientId);
       if (clientIndex === -1) return prevClients;
-
+  
       const updatedClients = [...prevClients];
-      const clientToUpdate = { ...updatedClients[clientIndex] };
-      
+      // Create a deep copy of the client to modify
+      const clientToUpdate = JSON.parse(JSON.stringify(updatedClients[clientIndex]));
+  
       clientToUpdate.isCritical = !clientToUpdate.isCritical;
-      // Define a fake last visit date to force rescheduling from today
-      clientToUpdate.lastVisitDate = new Date();
-
-      const regeneratedSchedule = generateSchedule(updatedClients, clientIndex);
-
+      
+      // To force a reschedule starting from now, we set the last visit to today.
+      // This will make the scheduler calculate the next visit from this point.
+      clientToUpdate.lastVisitDate = new Date().toISOString();
+  
+      updatedClients[clientIndex] = clientToUpdate;
+  
+      // Regenerate the schedule for all clients, as one client's change can affect others.
+      const regeneratedSchedule = generateSchedule(updatedClients, 0);
+  
       return regeneratedSchedule;
-    })
+    });
   }
 
   const selectedClient = useMemo(() => {
@@ -288,5 +294,3 @@ function DashboardSkeleton() {
     </div>
   )
 }
-
-    

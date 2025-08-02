@@ -22,7 +22,7 @@ const clientSchema = z.object({
   }),
 });
 
-type NewClientForm = Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits'>;
+type NewClientForm = Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits' | 'isCritical'>;
 
 interface AddClientDialogProps {
   open: boolean;

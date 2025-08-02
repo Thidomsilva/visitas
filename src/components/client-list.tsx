@@ -67,7 +67,7 @@ export function ClientList({ clients, selectedClientId, onSelectClient, filter, 
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {client.isCritical && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                    {client.isCritical && <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" title="Cliente Crítico"/>}
                     <h3 className="font-semibold truncate">{client.name}</h3>
                   </div>
                    <span className={cn("w-3 h-3 rounded-full", statusIndicatorConfig[status])} title={`Status: ${status}`}></span>
@@ -91,5 +91,3 @@ export function ClientList({ clients, selectedClientId, onSelectClient, filter, 
     </div>
   )
 }
-
-    

@@ -1,6 +1,6 @@
 import type { Client, ClientClassification } from './types';
 
-const clientsData: { name: string, unit: string, classification: ClientClassification, predefinedVisit?: string }[] = [
+const clientsData: { name: string, unit: string, classification: ClientClassification, predefinedVisit?: string, isCritical?: boolean }[] = [
   { name: 'AGEX', unit: 'LONDRINA', classification: 'C' },
   { name: 'APITEC', unit: 'LONDRINA', classification: 'B' },
   { name: 'APOLO', unit: 'LONDRINA', classification: 'B' },
@@ -67,12 +67,14 @@ export const initialClients: Client[] = clientsData.map((clientData, index) => {
         lastVisitDate: null,
         nextVisitDate: null,
         visits: [],
+        isCritical: clientData.isCritical || false,
     };
 
     if (clientData.predefinedVisit) {
         const visitDate = new Date(clientData.predefinedVisit);
-        const feedback = visitDate > new Date('2025-08-01T00:00:00') ? 'Visita pré-agendada.' : 'Última visita realizada.';
-        const followUp = visitDate > new Date('2025-08-01T00:00:00') ? 'Realizar visita conforme agendamento.' : 'Agendar próxima visita.';
+        // Using a more generic description for pre-defined visits
+        const feedback = 'Visita pré-definida no sistema.';
+        const followUp = 'Realizar visita conforme agendamento.';
         
         client.visits.push({
             id: crypto.randomUUID(),
@@ -80,7 +82,7 @@ export const initialClients: Client[] = clientsData.map((clientData, index) => {
             feedback: feedback,
             followUp: followUp,
         });
-        client.lastVisitDate = visitDate; // Treat this as the last visit to calculate the next one from it
+        client.lastVisitDate = visitDate;
     }
 
     return client;
