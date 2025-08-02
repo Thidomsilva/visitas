@@ -130,12 +130,12 @@ function DashboardPageContent() {
         initialClients.forEach(clientData => {
             const docRef = doc(clientsCollectionRef);
             const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
-            let lastVisitDateForProjection = creationDate;
+            let currentVisitDate = creationDate;
 
             const projectedVisits: Visit[] = [];
 
-            while (lastVisitDateForProjection <= endDate) {
-                let nextProjectedDate = calculateNextVisitDate(lastVisitDateForProjection, clientData.classification, clientData.isCritical);
+            while (currentVisitDate <= endDate) {
+                let nextProjectedDate = calculateNextVisitDate(currentVisitDate, clientData.classification, clientData.isCritical);
 
                 if (nextProjectedDate > endDate) break;
 
@@ -159,13 +159,12 @@ function DashboardPageContent() {
                     registeredBy: clientData.responsavel
                 });
                 
-                lastVisitDateForProjection = nextProjectedDate; // Correctly update the date for the next iteration
+                currentVisitDate = nextProjectedDate; 
             }
 
             const lastProjectedVisit = projectedVisits.length > 0 ? projectedVisits[projectedVisits.length - 1] : null;
             const lastHistoricalVisitDate = lastProjectedVisit ? (lastProjectedVisit.date as Timestamp).toDate() : creationDate;
             
-            // Calculate next visit after the projection period
             const nextVisitDateAfterProjection = calculateNextVisitDate(lastHistoricalVisitDate, clientData.classification, clientData.isCritical);
 
             const clientToAdd = {
@@ -514,4 +513,5 @@ export default function DashboardPage() {
     
 
     
+
 
