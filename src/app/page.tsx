@@ -16,7 +16,7 @@ import { ClientDetail } from "@/components/client-detail";
 import { CalendarView } from "@/components/calendar-view";
 import { AnalyticsView } from "@/components/analytics-view";
 import { cn } from "@/lib/utils";
-import { addDays } from "date-fns";
+import { addDays, set } from "date-fns";
 import { getInitialClientsForSeed } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -122,18 +122,40 @@ function DashboardPageContent() {
 
         const initialClients = getInitialClientsForSeed();
         const batch = writeBatch(db);
+        const endDate = new Date('2025-12-31');
 
         initialClients.forEach(clientData => {
-            const docRef = doc(clientsCollectionRef); // Cria uma nova referência de documento com ID automático
+            const docRef = doc(clientsCollectionRef);
             const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
-            const nextVisitDate = calculateNextVisitDate(creationDate, clientData.classification, clientData.isCritical);
-            
+
+            const projectedVisits: Visit[] = [];
+            let currentVisitDate = creationDate;
+
+            while (currentVisitDate <= endDate) {
+                 const nextSimulatedVisitDate = calculateNextVisitDate(currentVisitDate, clientData.classification, clientData.isCritical);
+                 if (nextSimulatedVisitDate > endDate) break;
+
+                 currentVisitDate = nextSimulatedVisitDate;
+                 
+                 projectedVisits.push({
+                     id: crypto.randomUUID(),
+                     date: Timestamp.fromDate(currentVisitDate),
+                     feedback: "Visita simulada automaticamente pelo sistema.",
+                     followUp: "Nenhum acompanhamento necessário para visita simulada.",
+                     registeredBy: clientData.responsavel
+                 });
+            }
+
+            const lastProjectedVisit = projectedVisits.length > 0 ? projectedVisits[projectedVisits.length - 1] : null;
+            const lastVisitDate = lastProjectedVisit ? (lastProjectedVisit.date as Timestamp).toDate() : creationDate;
+            const nextVisitDate = calculateNextVisitDate(lastVisitDate, clientData.classification, clientData.isCritical);
+
             const clientToAdd = {
                 ...clientData,
                 createdAt: Timestamp.fromDate(creationDate),
-                lastVisitDate: null,
+                lastVisitDate: lastProjectedVisit ? lastProjectedVisit.date : null,
                 nextVisitDate: Timestamp.fromDate(nextVisitDate),
-                visits: [],
+                visits: projectedVisits,
             };
             batch.set(docRef, clientToAdd);
         });
@@ -141,7 +163,7 @@ function DashboardPageContent() {
         await batch.commit();
         toast({
             title: "Sucesso!",
-            description: `${initialClients.length} clientes foram cadastrados no banco de dados.`,
+            description: `${initialClients.length} clientes e suas visitas projetadas foram cadastrados.`,
         });
 
     } catch (error) {
@@ -470,3 +492,5 @@ export default function DashboardPage() {
 
   return <DashboardPageContent />;
 }
+
+    
