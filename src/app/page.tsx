@@ -3,15 +3,16 @@
 import { useState, useMemo, useEffect } from "react";
 import { addDays } from 'date-fns';
 import { mockClients } from "@/lib/data";
-import { classificationIntervals, type Client, type Visit, type VisitStatus } from "@/lib/types";
+import { classificationIntervals, type Client, type Visit, type VisitStatus, ClientClassification } from "@/lib/types";
 import { getVisitStatus } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { StatusChart } from "@/components/status-chart";
 import { ClientCard } from "@/components/client-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Clock, AlertTriangle } from 'lucide-react';
+import { Users, Star, Diamond, Gem } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusPieChart } from "@/components/status-pie-chart";
 
 type FilterType = "all" | VisitStatus;
 
@@ -56,12 +57,22 @@ export default function DashboardPage() {
     }, {} as Record<VisitStatus, number>);
   }, [clients]);
 
+  const classificationStats = useMemo(() => {
+    return clients.reduce((acc, client) => {
+      if (!acc[client.classification]) {
+        acc[client.classification] = 0;
+      }
+      acc[client.classification]++;
+      return acc;
+    }, {} as Record<ClientClassification, number>);
+  }, [clients]);
+
   const chartData = useMemo(() => {
     return [
-      { status: 'on-schedule' as VisitStatus, count: stats['on-schedule'] || 0 },
-      { status: 'approaching' as VisitStatus, count: stats['approaching'] || 0 },
-      { status: 'overdue' as VisitStatus, count: stats['overdue'] || 0 },
-      { status: 'no-visits' as VisitStatus, count: stats['no-visits'] || 0 },
+      { status: 'on-schedule' as VisitStatus, count: stats['on-schedule'] || 0, name: 'Em Dia' },
+      { status: 'approaching' as VisitStatus, count: stats['approaching'] || 0, name: 'Próximas' },
+      { status: 'overdue' as VisitStatus, count: stats['overdue'] || 0, name: 'Atrasadas' },
+      { status: 'no-visits' as VisitStatus, count: stats['no-visits'] || 0, name: 'Sem Visitas' },
     ];
   }, [stats]);
   
@@ -76,37 +87,46 @@ export default function DashboardPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Clientes Classe A</CardTitle>
+              <Gem className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{clients.length}</div>
+              <div className="text-2xl font-bold">{classificationStats['A'] || 0}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Visitas Próximas</CardTitle>
-              <Clock className="h-4 w-4 text-accent" />
+              <CardTitle className="text-sm font-medium">Clientes Classe B</CardTitle>
+              <Diamond className="h-4 w-4 text-purple-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.approaching || 0}</div>
+              <div className="text-2xl font-bold">{classificationStats['B'] || 0}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Visitas Atrasadas</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <CardTitle className="text-sm font-medium">Clientes Classe C</CardTitle>
+              <Star className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.overdue || 0}</div>
+              <div className="text-2xl font-bold">{classificationStats['C'] || 0}</div>
             </CardContent>
           </Card>
-          <div className="lg:col-span-2 hidden lg:block">
-            <StatusChart data={chartData} />
+          <div className="lg:col-span-1 hidden lg:block">
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{clients.length}</div>
+                </CardContent>
+              </Card>
           </div>
         </div>
-        
-        <div className="lg:hidden">
+
+        <div className="grid gap-6 md:grid-cols-2">
+            <StatusPieChart data={chartData} />
             <StatusChart data={chartData} />
         </div>
         
@@ -148,7 +168,11 @@ function DashboardSkeleton() {
           <Skeleton className="h-[108px]" />
           <Skeleton className="h-[108px]" />
           <Skeleton className="h-[108px]" />
-          <Skeleton className="lg:col-span-2 h-[290px] md:h-auto" />
+          <Skeleton className="h-[108px]" />
+        </div>
+         <div className="grid gap-6 md:grid-cols-2">
+            <Skeleton className="h-[290px]" />
+            <Skeleton className="h-[290px]" />
         </div>
         <div>
           <Skeleton className="h-10 w-full md:w-[480px] mb-4" />

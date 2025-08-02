@@ -1,6 +1,6 @@
 "use client"
 
-import { Bar, BarChart, XAxis, YAxis } from "recharts"
+import { Pie, PieChart } from "recharts"
 
 import {
   Card,
@@ -13,10 +13,12 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
 } from "@/components/ui/chart"
 import type { VisitStatus } from "@/lib/types";
 
-interface StatusChartProps {
+interface StatusPieChartProps {
   data: { status: VisitStatus; count: number; name: string }[];
   className?: string;
 }
@@ -39,38 +41,41 @@ const chartConfig = {
   },
   'no-visits': {
     label: "Sem Visitas",
-    color: "hsl(var(--muted))",
+    color: "hsl(var(--muted-foreground))",
   },
 } satisfies import("./ui/chart").ChartConfig;
 
-export function StatusChart({ data, className }: StatusChartProps) {
+export function StatusPieChart({ data, className }: StatusPieChartProps) {
   const chartData = data.map(item => ({...item, fill: chartConfig[item.status].color }));
 
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle>Status das Visitas</CardTitle>
-        <CardDescription>Distribuição de clientes por status de visita</CardDescription>
+        <CardTitle>Visão Geral</CardTitle>
+        <CardDescription>Distribuição percentual dos status de visita.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="h-[200px] w-full">
-          <BarChart accessibilityLayer data={chartData} layout="vertical" margin={{ left: 10 }}>
-            <YAxis
-              dataKey="name"
-              type="category"
-              tickLine={false}
-              tickMargin={10}
-              axisLine={false}
-              tickFormatter={(value) => value.slice(0, 12)}
-              className="text-xs"
-            />
-            <XAxis dataKey="count" type="number" hide />
+      <CardContent className="flex items-center justify-center">
+        <ChartContainer
+          config={chartConfig}
+          className="mx-auto aspect-square h-[250px]"
+        >
+          <PieChart>
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent indicator="dot" />}
+              content={<ChartTooltipContent hideLabel />}
             />
-            <Bar dataKey="count" layout="vertical" radius={4} />
-          </BarChart>
+            <Pie
+              data={chartData}
+              dataKey="count"
+              nameKey="name"
+              innerRadius={60}
+              strokeWidth={5}
+            />
+             <ChartLegend
+              content={<ChartLegendContent nameKey="name" />}
+              className="-translate-y-[2px] flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+            />
+          </PieChart>
         </ChartContainer>
       </CardContent>
     </Card>
