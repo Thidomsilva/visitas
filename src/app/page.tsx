@@ -130,35 +130,35 @@ function DashboardPageContent() {
         initialClients.forEach(clientData => {
             const docRef = doc(clientsCollectionRef);
             const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
-            let lastSimulatedVisitDate = creationDate;
+            let currentVisitDate = creationDate;
 
             const projectedVisits: Visit[] = [];
 
-            while (lastSimulatedVisitDate <= endDate) {
-                let nextSimulatedVisitDate = calculateNextVisitDate(lastSimulatedVisitDate, clientData.classification, clientData.isCritical);
+            while (currentVisitDate <= endDate) {
+                let nextProjectedDate = calculateNextVisitDate(currentVisitDate, clientData.classification, clientData.isCritical);
 
-                if (nextSimulatedVisitDate > endDate) break;
+                if (nextProjectedDate > endDate) break;
 
                 // Respect the 2-visits-per-day rule
-                let visitDateKey = format(nextSimulatedVisitDate, 'yyyy-MM-dd');
+                let visitDateKey = format(nextProjectedDate, 'yyyy-MM-dd');
                 while ((dailyVisitCount.get(visitDateKey) || 0) >= 2) {
-                    nextSimulatedVisitDate = addDays(nextSimulatedVisitDate, 1);
-                    if (nextSimulatedVisitDate > endDate) break;
-                    visitDateKey = format(nextSimulatedVisitDate, 'yyyy-MM-dd');
+                    nextProjectedDate = addDays(nextProjectedDate, 1);
+                    if (nextProjectedDate > endDate) break;
+                    visitDateKey = format(nextProjectedDate, 'yyyy-MM-dd');
                 }
                 
-                if (nextSimulatedVisitDate > endDate) break;
+                if (nextProjectedDate > endDate) break;
 
                 dailyVisitCount.set(visitDateKey, (dailyVisitCount.get(visitDateKey) || 0) + 1);
 
                 projectedVisits.push({
                     id: crypto.randomUUID(),
-                    date: Timestamp.fromDate(nextSimulatedVisitDate),
+                    date: Timestamp.fromDate(nextProjectedDate),
                     feedback: "Visita simulada automaticamente pelo sistema.",
                     followUp: "Nenhum acompanhamento necessário para visita simulada.",
                     registeredBy: clientData.responsavel
                 });
-                lastSimulatedVisitDate = nextSimulatedVisitDate;
+                currentVisitDate = nextProjectedDate; // Correctly update the date for the next iteration
             }
 
             const lastProjectedVisit = projectedVisits.length > 0 ? projectedVisits[projectedVisits.length - 1] : null;
