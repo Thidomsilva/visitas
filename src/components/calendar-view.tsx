@@ -41,7 +41,9 @@ function CustomDay(props: DayProps) {
 
     return (
         <div className="flex flex-col h-full w-full">
-            <time dateTime={props.date.toISOString()} className="self-start p-1 text-xs md:text-sm">{dayNumber}</time>
+            <time dateTime={props.date.toISOString()} className={cn("self-end p-1 text-xs md:text-sm", props.day.isToday && "font-bold text-primary")}>
+                {dayNumber}
+            </time>
             <ScrollArea className="flex-1 -mt-1">
                 <div className="space-y-1 p-1">
                 {clientsOnThisDay.map(client => {
@@ -120,13 +122,11 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
             onMonthChange={setCurrentMonth}
             className="h-full w-full"
             classNames={{
-                table: "h-full w-full border-collapse",
-                tbody: "h-full",
-                row: "h-[calc(100%/6)] flex w-full",
-                cell: "h-full w-[calc(100%/7)] border-t first:border-l align-top relative",
-                day: "h-full w-full p-0",
-                day_disabled: "text-muted-foreground/50",
-                day_outside: "text-muted-foreground/50",
+                month: "flex flex-col h-full",
+                table: "h-full w-full border-collapse flex-grow",
+                tbody: "h-full flex flex-col",
+                row: "flex-grow flex w-full",
+                cell: "w-[calc(100%/7)] border-t first:border-l flex flex-col relative",
             }}
             components={{
               Day: (props: DayProps) => {
