@@ -36,7 +36,7 @@ function CustomDay(props: DayProps & { clientsOnThisDay: Client[]; onClientClick
     const { date, displayMonth, clientsOnThisDay, onClientClick } = props;
     
     return (
-        <div className={cn("h-full flex flex-col p-1", props.outside && "text-muted-foreground/50")}>
+        <div className={cn("h-full flex flex-col p-1", !isSameDay(date, displayMonth) && "text-muted-foreground/50")}>
             <time dateTime={date.toISOString()} className={cn("text-right text-xs md:text-sm", isSameDay(date, new Date()) && "font-bold text-primary")}>
                 {format(date, 'd')}
             </time>
@@ -117,6 +117,12 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
             onMonthChange={setCurrentMonth}
             disabled={date => !isBusinessDay(date)}
             showOutsideDays
+            components={{
+                Day: (props) => {
+                    const clientsOnThisDay = allVisitsByDay.get(format(props.date, 'yyyy-MM-dd')) || [];
+                    return <CustomDay {...props} clientsOnThisDay={clientsOnThisDay} onClientClick={handleClientClick} />
+                }
+            }}
           />
       </div>
       <div className="hidden md:block flex-1 h-full overflow-y-auto">

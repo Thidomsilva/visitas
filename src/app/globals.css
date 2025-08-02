@@ -83,37 +83,6 @@
   }
 }
 
-/* Default react-day-picker styles */
-.rdp {
-    --rdp-cell-size: 40px;
-    --rdp-caption-font-size: 18px;
-    --rdp-background-color: transparent;
-    --rdp-accent-color: hsl(var(--accent));
-    --rdp-accent-color-dark: hsl(var(--accent));
-    --rdp-foreground-color: hsl(var(--foreground));
-    --rdp-foreground-color-dark: hsl(var(--foreground));
-    --rdp-border-color: hsl(var(--border));
-    --rdp-border-color-dark: hsl(var(--border));
-    --rdp-outline: 2px solid hsl(var(--ring));
-    --rdp-outline-selected: 2px solid hsl(var(--ring));
-}
-
-.rdp-button:hover:not([aria-disabled=true]) {
-  @apply bg-accent text-accent-foreground;
-}
-
-.rdp-button:focus-visible:not([aria-disabled=true]) {
-  @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
-}
-
-.rdp-day_selected, .rdp-day_selected:hover, .rdp-day_selected:focus {
-  @apply bg-primary text-primary-foreground;
-}
-
-.rdp-day_today {
-  @apply font-bold text-accent-foreground bg-accent;
-}
-
-.rdp-day_outside {
-  @apply text-muted-foreground/50;
+.rdp-day {
+  min-height: 100px; /* Or any other appropriate value */
 }
