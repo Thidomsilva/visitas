@@ -300,11 +300,11 @@ function DashboardPageContent() {
     } else {
       // Ao deixar de ser crítico, recalcula a partir da última visita ou da criação
       const lastVisit = client.lastVisitDate instanceof Timestamp 
-        ? client.lastVisitDate.toDate() 
+        ? (client.lastVisitDate as Timestamp).toDate() 
         : client.lastVisitDate;
 
       const createdAt = client.createdAt instanceof Timestamp 
-        ? client.createdAt.toDate() 
+        ? (client.createdAt as Timestamp).toDate() 
         : client.createdAt;
 
       dateToCalculateFrom = lastVisit ? lastVisit : createdAt;
@@ -500,7 +500,7 @@ function DashboardPageContent() {
       </div>
       <AddClientDialog 
         open={isAddClientOpen}
-        onOpenChange={setAdd-client-dialog}
+        onOpenChange={setAddClientOpen}
         onClientAdded={handleAddClient}
       />
     </>
