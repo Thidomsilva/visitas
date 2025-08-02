@@ -57,7 +57,7 @@ export function ClientList({
   }
   
   return (
-    <div className="w-full max-w-xs border-r flex flex-col bg-slate-50/50 dark:bg-slate-900/50">
+    <div className="w-full md:max-w-xs border-b md:border-b-0 md:border-r flex flex-col bg-slate-50/50 dark:bg-slate-900/50">
        <div className="p-4 space-y-4">
         <h2 className="text-xl font-bold">Clientes ({clients.length})</h2>
         <div className="relative">
@@ -102,9 +102,8 @@ export function ClientList({
                 onClick={() => onSelectClient(client.id)}
                 className={cn(
                   "w-full text-left p-3 rounded-lg border transition-all",
-                  selectedClientId === client.id
-                    ? "bg-primary text-primary-foreground shadow"
-                    : "hover:bg-accent hover:text-accent-foreground bg-white"
+                  selectedClientId === client.id && "md:bg-primary md:text-primary-foreground md:shadow",
+                  "hover:bg-accent hover:text-accent-foreground bg-white"
                 )}
               >
                 <div className="flex items-center justify-between">
@@ -116,7 +115,7 @@ export function ClientList({
                 </div>
                 <p className={cn(
                   "text-sm mt-1",
-                   selectedClientId === client.id ? "text-primary-foreground/80" : "text-muted-foreground"
+                   selectedClientId === client.id ? "md:text-primary-foreground/80" : "text-muted-foreground"
                 )}>
                   Próxima visita: {client.nextVisitDate ? formatDistanceToNow(client.nextVisitDate as Date, { addSuffix: true, locale: ptBR }) : 'Não agendada'}
                 </p>
@@ -133,3 +132,5 @@ export function ClientList({
     </div>
   )
 }
+
+    

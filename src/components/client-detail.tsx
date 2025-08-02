@@ -13,7 +13,6 @@ import { useState, useMemo } from "react";
 import { VisitLogDialog } from "./visit-log-dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { Badge } from "./ui/badge";
-import { Textarea } from "./ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 
@@ -50,7 +49,7 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
         <Card className="w-full max-w-lg text-center py-16">
           <CardHeader>
             <CardTitle>Nenhum Cliente Selecionado</CardTitle>
-            <CardDescription>Selecione um cliente na lista à esquerda para ver os detalhes.</CardDescription>
+            <CardDescription>Selecione um cliente na lista para ver os detalhes.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -58,30 +57,30 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
   }
 
   return (
-    <Card className="flex-1">
+    <Card className="flex-1 w-full">
       <CardHeader>
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col md:flex-row items-start justify-between gap-4">
             <div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 flex-wrap">
                     <CardTitle className="text-2xl">{client.name}</CardTitle>
                     <StatusBadge status={status} />
                     {client.isCritical && <Badge variant="destructive" className="animate-pulse">CRÍTICO</Badge>}
                 </div>
                 <CardDescription className="mt-1">Unidade: {client.unit}</CardDescription>
             </div>
-            <div className="flex flex-wrap gap-2 justify-end">
+            <div className="flex flex-wrap gap-2 justify-start md:justify-end w-full md:w-auto">
                 <Button 
                     variant={client.isCritical ? "destructive" : "outline"} 
                     onClick={() => onToggleCriticalStatus(client.id)}
                     size="sm"
                 >
                     <AlertTriangle className="mr-2 h-4 w-4" /> 
-                    {client.isCritical ? "Remover Criticidade" : "Marcar como Crítico"}
+                    {client.isCritical ? "Remover Criticidade" : "Marcar Crítico"}
                  </Button>
                 <Popover open={schedulePopoverOpen} onOpenChange={setSchedulePopoverOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm">
-                      <CalendarIcon className="mr-2 h-4 w-4" /> Agendar Reunião
+                      <CalendarIcon className="mr-2 h-4 w-4" /> Agendar
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">
@@ -96,7 +95,7 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
                 </Popover>
 
                  <Button variant="outline" onClick={() => setLogDialogOpen(true)} size="sm">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Registrar Visita
+                    <PlusCircle className="mr-2 h-4 w-4" /> Registrar
                  </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -142,7 +141,7 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
                 <h4 className="text-lg font-semibold">Histórico de Visitas</h4>
                 <Button variant="link" onClick={() => setHistoryDialogOpen(true)}>
                     <History className="mr-2 h-4 w-4"/>
-                    Ver histórico completo
+                    Ver completo
                 </Button>
             </div>
             {client.visits.length > 0 ? (
@@ -183,3 +182,5 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
     </Card>
   )
 }
+
+    

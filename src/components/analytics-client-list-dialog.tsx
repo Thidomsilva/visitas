@@ -20,7 +20,7 @@ export function AnalyticsClientListDialog({ open, onOpenChange, title, clients }
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[70vh] flex flex-col">
+      <DialogContent className="max-w-4xl w-[90vw] h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
            <DialogDescription>
@@ -34,7 +34,7 @@ export function AnalyticsClientListDialog({ open, onOpenChange, title, clients }
                 <TableHeader className="sticky top-0 bg-background">
                   <TableRow>
                     <TableHead>Cliente</TableHead>
-                    <TableHead>Unidade</TableHead>
+                    <TableHead className="hidden sm:table-cell">Unidade</TableHead>
                     <TableHead>Responsável</TableHead>
                     <TableHead>Próxima Visita</TableHead>
                     <TableHead>Status</TableHead>
@@ -44,12 +44,15 @@ export function AnalyticsClientListDialog({ open, onOpenChange, title, clients }
                   {clients.map((client) => (
                     <TableRow key={client.id}>
                       <TableCell className="font-medium">
-                        {client.name} <Badge variant="outline">Classe {client.classification}</Badge>
+                        <div className="flex flex-col">
+                          <span>{client.name}</span>
+                          <Badge variant="outline" className="w-fit mt-1">Classe {client.classification}</Badge>
+                        </div>
                       </TableCell>
-                      <TableCell>{client.unit}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{client.unit}</TableCell>
                       <TableCell>{client.responsavel}</TableCell>
                        <TableCell>
-                        {client.nextVisitDate ? format(client.nextVisitDate, 'PPP', { locale: ptBR }) : 'N/D'}
+                        {client.nextVisitDate ? format(client.nextVisitDate, 'dd/MM/yy', { locale: ptBR }) : 'N/D'}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={getVisitStatus(client.nextVisitDate)} />
@@ -69,3 +72,5 @@ export function AnalyticsClientListDialog({ open, onOpenChange, title, clients }
     </Dialog>
   );
 }
+
+    

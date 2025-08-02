@@ -38,13 +38,13 @@ export function DashboardHeader({ onAddClient, view, onViewChange, onSeedDatabas
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-2 md:gap-8">
           <div className="flex items-center">
             <Briefcase className="h-6 w-6 mr-2 text-primary" />
-            <span className="font-bold text-lg">Visitas Sagacy</span>
+            <span className="font-bold text-lg hidden md:inline">Visitas Sagacy</span>
           </div>
           <Tabs value={view} onValueChange={(value) => onViewChange(value as ViewType)}>
-            <TabsList>
+            <TabsList className="flex-wrap h-auto">
               <TabsTrigger value="dashboard">Painel</TabsTrigger>
               <TabsTrigger value="calendar">Calendário</TabsTrigger>
               <TabsTrigger value="analytics">Relatórios</TabsTrigger>
@@ -52,9 +52,9 @@ export function DashboardHeader({ onAddClient, view, onViewChange, onSeedDatabas
           </Tabs>
         </div>
         <div className="flex items-center gap-2">
-            <Button onClick={onAddClient}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Adicionar Cliente
+            <Button onClick={onAddClient} size="sm">
+              <PlusCircle className="mr-0 md:mr-2 h-4 w-4" />
+              <span className="hidden md:inline">Adicionar Cliente</span>
             </Button>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -102,3 +102,5 @@ export function DashboardHeader({ onAddClient, view, onViewChange, onSeedDatabas
     </header>
   );
 }
+
+    
