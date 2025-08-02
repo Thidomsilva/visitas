@@ -26,13 +26,13 @@ interface CalendarViewProps {
     onVisitLogged: (clientId: string, visit: Visit) => void;
     onDeleteClient: (clientId: string) => void;
     onToggleCriticalStatus: (clientId: string) => void;
+    onScheduleMeeting: (clientId: string, date: Date) => void;
 }
 
 function CustomDay(props: DayProps) {
-    const { clientsOnThisDay, onClientClick, selectedClientId } = props.day.appContext as { 
+    const { clientsOnThisDay, onClientClick } = props.day.appContext as { 
         clientsOnThisDay: Client[], 
         onClientClick: (id: string) => void,
-        selectedClientId: string | null
     };
     const dayNumber = format(props.date, 'd');
 
@@ -72,14 +72,16 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
     return clients.find(c => c.id === selectedClientId) || null;
   }, [selectedClientId, clients]);
 
-  const scheduledClientsByDay = useMemo(() => {
+  const allVisitsByDay = useMemo(() => {
     const map = new Map<string, Client[]>();
     clients.forEach(client => {
-      if (client.nextVisitDate) {
-        const dayKey = format(client.nextVisitDate as Date, 'yyyy-MM-dd');
+      client.visits.forEach(visit => {
+        const dayKey = format(visit.date as Date, 'yyyy-MM-dd');
         const existing = map.get(dayKey) || [];
-        map.set(dayKey, [...existing, client]);
-      }
+        if (!existing.some(c => c.id === client.id)) {
+            map.set(dayKey, [...existing, client]);
+        }
+      });
     });
     return map;
   }, [clients]);
@@ -102,8 +104,8 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
             components={{
               Day: (props: DayProps) => {
                 const dayKey = format(props.date, 'yyyy-MM-dd');
-                const clientsOnThisDay = scheduledClientsByDay.get(dayKey) || [];
-                const appContext = { clientsOnThisDay, onClientClick, selectedClientId };
+                const clientsOnThisDay = allVisitsByDay.get(dayKey) || [];
+                const appContext = { clientsOnThisDay, onClientClick };
                 return <CustomDay {...props} day={{...props.day, appContext}}/>
               }
             }}
@@ -111,10 +113,14 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
           />
       </div>
       <div className="flex-1 h-full overflow-y-auto">
-        <div className="p-4 bg-white rounded-lg border">
-            <h3 className="font-semibold text-lg mb-2">Cliente Selecionado</h3>
-            <p className="text-sm text-muted-foreground">Clique em um cliente no calendário para ver seus detalhes aqui e registrar uma visita.</p>
-        </div>
+         {selectedClient ? (
+            <ClientDetail client={selectedClient} {...clientDetailProps} />
+         ) : (
+            <div className="p-4 bg-white rounded-lg border">
+                <h3 className="font-semibold text-lg mb-2">Cliente Selecionado</h3>
+                <p className="text-sm text-muted-foreground">Clique em um cliente no calendário para ver seus detalhes aqui e registrar uma visita.</p>
+            </div>
+         )}
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ import { CalendarView } from "@/components/calendar-view";
 import { AnalyticsView } from "@/components/analytics-view";
 import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
+import { ptBR } from 'date-fns/locale';
 import { getInitialClientsForSeed } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -127,7 +128,6 @@ function DashboardPageContent() {
         const dailyVisitCount = new Map<string, number>();
 
         for (const clientData of initialClients) {
-            const docRef = doc(clientsCollectionRef);
             const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
             let currentVisitDate = creationDate;
 
@@ -173,7 +173,7 @@ function DashboardPageContent() {
                 visits: projectedVisits,
             };
             
-            // Save each client individually
+            const docRef = doc(clientsCollectionRef);
             await setDoc(docRef, clientToAdd);
         }
 
@@ -480,6 +480,7 @@ function DashboardPageContent() {
             onVisitLogged={handleVisitLogged}
             onDeleteClient={handleDeleteClient}
             onToggleCriticalStatus={handleToggleCriticalStatus}
+            onScheduleMeeting={handleScheduleMeeting}
           />
         );
       case 'analytics':
