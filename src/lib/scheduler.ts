@@ -1,5 +1,5 @@
 import { addDays, subDays, isMonday, isSaturday, isSunday, format } from 'date-fns';
-import { classificationIntervals, type Client } from './types';
+import { classificationIntervals, criticalInterval, type Client } from './types';
 
 // Helper function to get a random integer between min and max (inclusive)
 function getRandomInt(min: number, max: number) {
@@ -97,7 +97,7 @@ export function generateSchedule(clients: Client[], startIndex = 0): Client[] {
     let nextVisitDate = new Date(lastVisitDate);
 
     while (nextVisitDate <= endDate) {
-      const interval = classificationIntervals[client.classification];
+      const interval = client.isCritical ? criticalInterval : classificationIntervals[client.classification];
       const daysToAdd = getRandomInt(interval.min, interval.max);
       
       let candidateDate = addDays(lastVisitDate, daysToAdd);
@@ -108,8 +108,11 @@ export function generateSchedule(clients: Client[], startIndex = 0): Client[] {
 
         const dateKey = format(candidateDate, 'yyyy-MM-dd');
         const isPredefined = schedule[dateKey] && client.visits.some(v => format(v.date, 'yyyy-MM-dd') === dateKey);
+        
+        // Exception for critical clients - they can be scheduled on Mondays
+        const allowMonday = client.isCritical;
 
-        if (isValidVisitDay(candidateDate) && (schedule[dateKey] || 0) < 2 && !isPredefined) {
+        if (isValidVisitDay(candidateDate, allowMonday) && (schedule[dateKey] || 0) < 2 && !isPredefined) {
           schedule[dateKey] = (schedule[dateKey] || 0) + 1;
           break; // Found a valid slot
         }

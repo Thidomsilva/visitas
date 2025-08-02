@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AlertTriangle } from "lucide-react";
 
 const statusIndicatorConfig = {
   'overdue': 'bg-red-500',
@@ -55,7 +56,10 @@ export function ClientList({ clients, selectedClientId, onSelectClient, filter, 
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold truncate">{client.name}</h3>
+                  <div className="flex items-center gap-2">
+                    {client.isCritical && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                    <h3 className="font-semibold truncate">{client.name}</h3>
+                  </div>
                    <span className={cn("w-3 h-3 rounded-full", statusIndicatorConfig[status])} title={`Status: ${status}`}></span>
                 </div>
                 <p className={cn(

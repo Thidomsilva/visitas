@@ -26,6 +26,10 @@ export default function DashboardPage() {
 
   const filteredClients = useMemo(() => {
     const sortedClients = [...clients].sort((a, b) => {
+      // Critical clients on top
+      if (a.isCritical && !b.isCritical) return -1;
+      if (!a.isCritical && b.isCritical) return 1;
+
       const statusA = getVisitStatus(a.nextVisitDate);
       const statusB = getVisitStatus(b.nextVisitDate);
 
@@ -96,6 +100,7 @@ export default function DashboardPage() {
       lastVisitDate: null,
       nextVisitDate: null,
       visits: [],
+      isCritical: false,
     };
     const newClients = [clientToAdd, ...clients];
     // We need to regenerate the schedule with the new client
@@ -114,6 +119,24 @@ export default function DashboardPage() {
       }
       return scheduledClients;
     });
+  }
+
+  const handleToggleCriticalStatus = (clientId: string) => {
+    setClients(prevClients => {
+      const clientIndex = prevClients.findIndex(c => c.id === clientId);
+      if (clientIndex === -1) return prevClients;
+
+      const updatedClients = [...prevClients];
+      const clientToUpdate = { ...updatedClients[clientIndex] };
+      
+      clientToUpdate.isCritical = !clientToUpdate.isCritical;
+      // Define a fake last visit date to force rescheduling from today
+      clientToUpdate.lastVisitDate = new Date();
+
+      const regeneratedSchedule = generateSchedule(updatedClients, clientIndex);
+
+      return regeneratedSchedule;
+    })
   }
 
   const selectedClient = useMemo(() => {
@@ -203,6 +226,7 @@ export default function DashboardPage() {
               client={selectedClient}
               onVisitLogged={handleVisitLogged}
               onDeleteClient={handleDeleteClient}
+              onToggleCriticalStatus={handleToggleCriticalStatus}
             />
 
           </main>

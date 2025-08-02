@@ -7,19 +7,21 @@ import { ptBR } from 'date-fns/locale';
 import { StatusBadge } from "./status-badge";
 import { getVisitStatus } from "@/lib/utils";
 import { Button } from "./ui/button";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, AlertTriangle } from "lucide-react";
 import { VisitHistoryDialog } from "./visit-history-dialog";
 import { useState } from "react";
 import { VisitLogDialog } from "./visit-log-dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
+import { Badge } from "./ui/badge";
 
 interface ClientDetailProps {
   client: Client | null;
   onVisitLogged: (clientId: string, visit: Visit) => void;
   onDeleteClient: (clientId: string) => void;
+  onToggleCriticalStatus: (clientId: string) => void;
 }
 
-export function ClientDetail({ client, onVisitLogged, onDeleteClient }: ClientDetailProps) {
+export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCriticalStatus }: ClientDetailProps) {
   const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
@@ -47,10 +49,18 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient }: ClientDe
                 <div className="flex items-center gap-4">
                     <CardTitle className="text-2xl">{client.name}</CardTitle>
                     <StatusBadge status={status} />
+                    {client.isCritical && <Badge variant="destructive" className="animate-pulse">CRÍTICO</Badge>}
                 </div>
                 <CardDescription className="mt-1">Unidade: {client.unit}</CardDescription>
             </div>
             <div className="flex gap-2">
+                <Button 
+                    variant={client.isCritical ? "destructive" : "outline"} 
+                    onClick={() => onToggleCriticalStatus(client.id)}
+                >
+                    <AlertTriangle className="mr-2 h-4 w-4" /> 
+                    {client.isCritical ? "Remover Criticidade" : "Marcar como Crítico"}
+                 </Button>
                  <Button variant="outline" onClick={() => setLogDialogOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Registrar Visita
                  </Button>

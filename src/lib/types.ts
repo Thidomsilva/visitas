@@ -16,6 +16,7 @@ export type Client = {
   lastVisitDate: Date | null;
   nextVisitDate: Date | null;
   visits: Visit[];
+  isCritical?: boolean;
 };
 
 export type VisitStatus = 'on-schedule' | 'approaching' | 'overdue' | 'no-visits';
@@ -24,4 +25,9 @@ export const classificationIntervals: Record<ClientClassification, { min: number
   A: { min: 25, max: 35 },
   B: { min: 36, max: 50 },
   C: { min: 50, max: 90 },
+};
+
+export const criticalInterval = {
+    min: 7,
+    max: 7,
 };
