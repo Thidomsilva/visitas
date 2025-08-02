@@ -8,7 +8,7 @@ import { classificationIntervals, type Client, type Visit, type VisitStatus, Cli
 import { getVisitStatus } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gem, Diamond, Star, CalendarClock } from 'lucide-react';
+import { Gem, Diamond, Star, CalendarClock, XCircle, CheckCircle2 } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddClientDialog } from "@/components/add-client-dialog";
 import { ClientList } from "@/components/client-list";
@@ -208,18 +208,18 @@ export default function DashboardPage() {
               onSearchChange={setSearchQuery}
             />
           <main className="flex-1 flex flex-col p-6 overflow-y-auto">
-             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
+             <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6 mb-6">
               <Card
                 className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'class-A' && 'ring-2 ring-primary')}
                 onClick={() => handleFilterChange('class-A')}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Clientes Classe A</CardTitle>
+                  <CardTitle className="text-sm font-medium">Classe A</CardTitle>
                   <Gem className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{classificationStats['A'] || 0}</div>
-                  <p className="text-xs text-muted-foreground">do total de {clients.length} clientes</p>
+                  <p className="text-xs text-muted-foreground">do total de {clients.length}</p>
                 </CardContent>
               </Card>
               <Card
@@ -227,12 +227,12 @@ export default function DashboardPage() {
                 onClick={() => handleFilterChange('class-B')}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Clientes Classe B</CardTitle>
+                  <CardTitle className="text-sm font-medium">Classe B</CardTitle>
                   <Diamond className="h-4 w-4 text-purple-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{classificationStats['B'] || 0}</div>
-                   <p className="text-xs text-muted-foreground">do total de {clients.length} clientes</p>
+                   <p className="text-xs text-muted-foreground">do total de {clients.length}</p>
                 </CardContent>
               </Card>
               <Card
@@ -240,12 +240,12 @@ export default function DashboardPage() {
                 onClick={() => handleFilterChange('class-C')}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Clientes Classe C</CardTitle>
+                  <CardTitle className="text-sm font-medium">Classe C</CardTitle>
                   <Star className="h-4 w-4 text-yellow-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{classificationStats['C'] || 0}</div>
-                   <p className="text-xs text-muted-foreground">do total de {clients.length} clientes</p>
+                   <p className="text-xs text-muted-foreground">do total de {clients.length}</p>
                 </CardContent>
               </Card>
               <Card
@@ -258,7 +258,33 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats['approaching'] || 0}</div>
-                   <p className="text-xs text-muted-foreground">nos próximos 7 dias</p>
+                   <p className="text-xs text-muted-foreground">próximos 7 dias</p>
+                </CardContent>
+              </Card>
+              <Card
+                className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'overdue' && 'ring-2 ring-primary')}
+                onClick={() => handleFilterChange('overdue')}
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Visitas Atrasadas</CardTitle>
+                  <XCircle className="h-4 w-4 text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats['overdue'] || 0}</div>
+                   <p className="text-xs text-muted-foreground">clientes pendentes</p>
+                </CardContent>
+              </Card>
+              <Card
+                className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'on-schedule' && 'ring-2 ring-primary')}
+                onClick={() => handleFilterChange('on-schedule')}
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Visitas em Dia</CardTitle>
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats['on-schedule'] || 0}</div>
+                   <p className="text-xs text-muted-foreground">clientes em dia</p>
                 </CardContent>
               </Card>
             </div>
@@ -294,7 +320,9 @@ function DashboardSkeleton() {
           </div>
         </div>
         <main className="flex-1 p-6">
-           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
+           <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6 mb-6">
+              <Skeleton className="h-[108px]" />
+              <Skeleton className="h-[108px]" />
               <Skeleton className="h-[108px]" />
               <Skeleton className="h-[108px]" />
               <Skeleton className="h-[108px]" />
