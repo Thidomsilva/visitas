@@ -33,7 +33,7 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ onAddClient, view, onViewChange, onSeedDatabase, isSeeding }: DashboardHeaderProps) {
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   
   return (
     <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
