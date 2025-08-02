@@ -16,7 +16,7 @@ import { ClientDetail } from "@/components/client-detail";
 import { CalendarView } from "@/components/calendar-view";
 import { AnalyticsView } from "@/components/analytics-view";
 import { cn } from "@/lib/utils";
-import { addDays, set } from "date-fns";
+import { addDays, format } from "date-fns";
 import { getInitialClientsForSeed } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -39,7 +39,7 @@ function deserializeClient(client: Client): Client {
 const calculateNextVisitDate = (lastVisit: Date, classification: ClientClassification, isCritical?: boolean): Date => {
     const criticalInterval = { min: 7, max: 7 };
     const interval = isCritical ? criticalInterval : classificationIntervals[classification];
-    const daysToAdd = Math.floor((interval.min + interval.max) / 2);
+    const daysToAdd = Math.floor(Math.random() * (interval.max - interval.min + 1)) + interval.min;
     let nextDate = addDays(lastVisit, daysToAdd);
 
     // Basic weekend/holiday avoidance can be added here if needed
@@ -106,6 +106,8 @@ function DashboardPageContent() {
 
   const handleSeedDatabase = async () => {
     setIsSeeding(true);
+    toast({ title: "Iniciando processo...", description: "Populando o banco de dados. Isso pode levar alguns instantes." });
+
     try {
         const clientsCollectionRef = collection(db, "clients");
         const existingClientsSnapshot = await getDocs(query(clientsCollectionRef));
@@ -123,30 +125,46 @@ function DashboardPageContent() {
         const initialClients = getInitialClientsForSeed();
         const batch = writeBatch(db);
         const endDate = new Date('2025-12-31');
+        const dailyVisitCount = new Map<string, number>();
 
         initialClients.forEach(clientData => {
             const docRef = doc(clientsCollectionRef);
             const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
-
-            const projectedVisits: Visit[] = [];
             let lastSimulatedVisitDate = creationDate;
 
+            const projectedVisits: Visit[] = [];
+
             while (lastSimulatedVisitDate <= endDate) {
-                 const nextSimulatedVisitDate = calculateNextVisitDate(lastSimulatedVisitDate, clientData.classification, clientData.isCritical);
-                 if (nextSimulatedVisitDate > endDate) break;
-                 
-                 projectedVisits.push({
-                     id: crypto.randomUUID(),
-                     date: Timestamp.fromDate(nextSimulatedVisitDate),
-                     feedback: "Visita simulada automaticamente pelo sistema.",
-                     followUp: "Nenhum acompanhamento necessário para visita simulada.",
-                     registeredBy: clientData.responsavel
-                 });
-                 lastSimulatedVisitDate = nextSimulatedVisitDate;
+                let nextSimulatedVisitDate = calculateNextVisitDate(lastSimulatedVisitDate, clientData.classification, clientData.isCritical);
+
+                if (nextSimulatedVisitDate > endDate) break;
+
+                // Respect the 2-visits-per-day rule
+                let visitDateKey = format(nextSimulatedVisitDate, 'yyyy-MM-dd');
+                while ((dailyVisitCount.get(visitDateKey) || 0) >= 2) {
+                    nextSimulatedVisitDate = addDays(nextSimulatedVisitDate, 1);
+                    if (nextSimulatedVisitDate > endDate) break;
+                    visitDateKey = format(nextSimulatedVisitDate, 'yyyy-MM-dd');
+                }
+                
+                if (nextSimulatedVisitDate > endDate) break;
+
+                dailyVisitCount.set(visitDateKey, (dailyVisitCount.get(visitDateKey) || 0) + 1);
+
+                projectedVisits.push({
+                    id: crypto.randomUUID(),
+                    date: Timestamp.fromDate(nextSimulatedVisitDate),
+                    feedback: "Visita simulada automaticamente pelo sistema.",
+                    followUp: "Nenhum acompanhamento necessário para visita simulada.",
+                    registeredBy: clientData.responsavel
+                });
+                lastSimulatedVisitDate = nextSimulatedVisitDate;
             }
 
             const lastProjectedVisit = projectedVisits.length > 0 ? projectedVisits[projectedVisits.length - 1] : null;
             const lastVisitDate = lastProjectedVisit ? (lastProjectedVisit.date as Timestamp).toDate() : creationDate;
+            
+            // Calculate next visit after the projection period
             const nextVisitDate = calculateNextVisitDate(lastVisitDate, clientData.classification, clientData.isCritical);
 
             const clientToAdd = {
@@ -491,5 +509,7 @@ export default function DashboardPage() {
 
   return <DashboardPageContent />;
 }
+
+    
 
     
