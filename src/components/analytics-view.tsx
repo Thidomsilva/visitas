@@ -3,7 +3,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend, Tooltip, LabelList } from 'recharts';
-import { format, parseISO, getMonth, getYear, isAfter } from 'date-fns';
+import { format, parseISO, getMonth, getYear, isAfter, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Client, ClientClassification, VisitStatus } from '@/lib/types';
 import { getVisitStatus } from '@/lib/utils';
@@ -69,9 +69,10 @@ export function AnalyticsView({ clients }: AnalyticsViewProps) {
 
   const scheduledVisitsByMonth = useMemo(() => {
     const monthCounts: { [key: string]: { visits: number; clients: Client[] } } = {};
+    const today = startOfDay(new Date());
 
     clients.forEach(client => {
-      if (client.nextVisitDate && isAfter(client.nextVisitDate, new Date())) {
+      if (client.nextVisitDate && isAfter(client.nextVisitDate, today)) {
         const monthKey = format(new Date(client.nextVisitDate), 'yyyy-MM');
         if (!monthCounts[monthKey]) {
           monthCounts[monthKey] = { visits: 0, clients: [] };
