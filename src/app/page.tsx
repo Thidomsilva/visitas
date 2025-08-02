@@ -13,15 +13,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AddClientDialog } from "@/components/add-client-dialog";
 import { ClientList } from "@/components/client-list";
 import { ClientDetail } from "@/components/client-detail";
+import { CalendarView } from "@/components/calendar-view";
 import { generateSchedule } from "@/lib/scheduler";
 import { cn } from "@/lib/utils";
 
 type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
+type ViewType = "dashboard" | "calendar";
+
 
 function DashboardSkeleton() {
   return (
      <div className="min-h-screen bg-background flex flex-col">
-      <DashboardHeader onAddClient={() => {}}/>
+      <DashboardHeader onAddClient={() => {}} view="dashboard" onViewChange={() => {}}/>
       <div className="flex-1 flex overflow-hidden">
         <div className="w-80 border-r p-4 space-y-4">
           <Skeleton className="h-10 w-full" />
@@ -52,6 +55,7 @@ function DashboardPageContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddClientOpen, setAddClientOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [view, setView] = useState<ViewType>("dashboard");
 
   const filteredClients = useMemo(() => {
     let sortedClients = [...clients].sort((a, b) => {
@@ -97,19 +101,19 @@ function DashboardPageContent() {
   }, [clients, filter, searchQuery]);
 
   useEffect(() => {
-    if (filteredClients.length > 0 && !selectedClientId) {
+    if (view === 'dashboard' && filteredClients.length > 0 && !selectedClientId) {
       setSelectedClientId(filteredClients[0].id);
     }
-  }, [filteredClients, selectedClientId]);
+  }, [filteredClients, selectedClientId, view]);
 
 
   useEffect(() => {
-    if (filteredClients.length > 0 && !filteredClients.find(c => c.id === selectedClientId)) {
+     if (view === 'dashboard' && filteredClients.length > 0 && !filteredClients.find(c => c.id === selectedClientId)) {
       setSelectedClientId(filteredClients[0].id);
-    } else if (filteredClients.length === 0) {
+    } else if (view === 'dashboard' && filteredClients.length === 0) {
       setSelectedClientId(null);
     }
-  }, [filter, clients, selectedClientId, filteredClients, searchQuery]);
+  }, [filter, clients, selectedClientId, filteredClients, searchQuery, view]);
   
 
   const handleVisitLogged = (clientId: string, visit: Visit) => {
@@ -215,8 +219,13 @@ function DashboardPageContent() {
   return (
     <>
       <div className="min-h-screen bg-background flex flex-col">
-        <DashboardHeader onAddClient={() => setAddClientOpen(true)} />
-        <div className="flex-1 flex overflow-hidden">
+        <DashboardHeader 
+            onAddClient={() => setAddClientOpen(true)}
+            view={view}
+            onViewChange={setView}
+        />
+        {view === 'dashboard' ? (
+          <div className="flex-1 flex overflow-hidden">
             <ClientList
               clients={filteredClients}
               selectedClientId={selectedClientId}
@@ -226,7 +235,7 @@ function DashboardPageContent() {
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
             />
-          <main className="flex-1 flex flex-col p-6 overflow-y-auto">
+            <main className="flex-1 flex flex-col p-6 overflow-y-auto">
              <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6 mb-6">
               <Card
                 className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'class-A' && 'ring-2 ring-primary')}
@@ -315,8 +324,18 @@ function DashboardPageContent() {
               onToggleCriticalStatus={handleToggleCriticalStatus}
             />
 
-          </main>
-        </div>
+            </main>
+          </div>
+        ) : (
+          <CalendarView
+            clients={clients}
+            onClientClick={(clientId) => setSelectedClientId(clientId)}
+            selectedClientId={selectedClientId}
+            onVisitLogged={handleVisitLogged}
+            onDeleteClient={handleDeleteClient}
+            onToggleCriticalStatus={handleToggleCriticalStatus}
+          />
+        )}
       </div>
       <AddClientDialog 
         open={isAddClientOpen}
