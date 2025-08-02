@@ -292,8 +292,9 @@ function DashboardPageContent() {
     if (!client) return;
 
     const newCriticalStatus = !client.isCritical;
-    const lastVisit = (client.lastVisitDate || client.createdAt) as Date;
-    const nextVisitDate = calculateNextVisitDate(lastVisit, client.classification, newCriticalStatus);
+    // Calculate the next visit from TODAY, not from the last visit or creation date.
+    const dateToCalculateFrom = new Date();
+    const nextVisitDate = calculateNextVisitDate(dateToCalculateFrom, client.classification, newCriticalStatus);
 
     await updateDoc(clientRef, {
       isCritical: newCriticalStatus,
@@ -495,5 +496,7 @@ export default function DashboardPage() {
 
   return <DashboardPageContent />;
 }
+
+    
 
     
