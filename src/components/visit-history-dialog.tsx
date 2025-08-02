@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Visit } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { Timestamp } from 'firebase/firestore';
 
 interface VisitHistoryDialogProps {
   open: boolean;
@@ -14,7 +15,11 @@ interface VisitHistoryDialogProps {
 }
 
 export function VisitHistoryDialog({ open, onOpenChange, clientName, visits }: VisitHistoryDialogProps) {
-  const sortedVisits = [...visits].sort((a, b) => b.date.getTime() - a.date.getTime());
+  const sortedVisits = [...visits].sort((a, b) => {
+    const dateA = a.date instanceof Timestamp ? a.date.toMillis() : (a.date as Date).getTime();
+    const dateB = b.date instanceof Timestamp ? b.date.toMillis() : (b.date as Date).getTime();
+    return dateB - dateA;
+  });
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -41,7 +46,7 @@ export function VisitHistoryDialog({ open, onOpenChange, clientName, visits }: V
                   {sortedVisits.map((visit, index) => (
                     <TableRow key={visit.id}>
                       <TableCell className="font-medium whitespace-nowrap">
-                        {format(visit.date, 'PPP', { locale: ptBR })}
+                        {format(visit.date instanceof Timestamp ? visit.date.toDate() : visit.date as Date, 'PPP', { locale: ptBR })}
                         {index === 0 && <Badge variant="secondary" className="ml-2">Última</Badge>}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{visit.feedback}</TableCell>

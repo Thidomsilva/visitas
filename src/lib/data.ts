@@ -1,6 +1,9 @@
-import type { Client, ClientClassification, Visit } from './types';
+import type { ClientClassification } from './types';
 
-const clientsData: { name: string, unit: string, classification: ClientClassification, predefinedVisit?: string, isCritical?: boolean }[] = [
+// This file now primarily serves as a reference or for a one-time seeding script.
+// The main application will read and write data from Firebase, not from here.
+
+const clientsData: { name: string, unit: 'LONDRINA' | 'CURITIBA', classification: ClientClassification }[] = [
   { name: 'AGEX', unit: 'LONDRINA', classification: 'C' },
   { name: 'APITEC', unit: 'LONDRINA', classification: 'B' },
   { name: 'APOLO', unit: 'LONDRINA', classification: 'B' },
@@ -9,7 +12,7 @@ const clientsData: { name: string, unit: string, classification: ClientClassific
   { name: 'ARNALDO\'S', unit: 'LONDRINA', classification: 'A' },
   { name: 'ASTER', unit: 'LONDRINA', classification: 'C' },
   { name: 'ATLANTIS', unit: 'CURITIBA', classification: 'B' },
-  { name: 'ATZ', unit: 'LONDRINA', classification: 'A', predefinedVisit: '2025-08-04T10:00:00' },
+  { name: 'ATZ', unit: 'LONDRINA', classification: 'A' },
   { name: 'AUTO CENTER BANDEIRANTES', unit: 'LONDRINA', classification: 'A' },
   { name: 'AVANTE', unit: 'LONDRINA', classification: 'B' },
   { name: 'AVATRON', unit: 'LONDRINA', classification: 'B' },
@@ -19,7 +22,7 @@ const clientsData: { name: string, unit: string, classification: ClientClassific
   { name: 'BROT', unit: 'LONDRINA', classification: 'B' },
   { name: 'CENTERROL', unit: 'CURITIBA', classification: 'A' },
   { name: 'CHURRASKIN', unit: 'LONDRINA', classification: 'C' },
-  { name: 'CONSTRUTORA STENGE', unit: 'LONDRINA', classification: 'A', predefinedVisit: '2025-08-05T10:00:00' },
+  { name: 'CONSTRUTORA STENGE', unit: 'LONDRINA', classification: 'A' },
   { name: 'DEPÓSITO PRINCIPE', unit: 'LONDRINA', classification: 'B' },
   { name: 'ELETRO POLAR', unit: 'CURITIBA', classification: 'A' },
   { name: 'FUNGARI AR CONDICIONADO', unit: 'LONDRINA', classification: 'C' },
@@ -40,8 +43,8 @@ const clientsData: { name: string, unit: string, classification: ClientClassific
   { name: 'PRIMELOG', unit: 'LONDRINA', classification: 'C' },
   { name: 'RODOMIGLIO', unit: 'LONDRINA', classification: 'A' },
   { name: 'ROUTE BEER', unit: 'LONDRINA', classification: 'B' },
-  { name: 'RS TRANSMISSÃO', unit: 'LONDRINA', classification: 'B', predefinedVisit: '2025-07-21T10:00:00' },
-  { name: 'SPIRONELLI', unit: 'LONDRina', classification: 'C' },
+  { name: 'RS TRANSMISSÃO', unit: 'LONDRINA', classification: 'B' },
+  { name: 'SPIRONELLI', unit: 'LONDRINA', classification: 'C' },
   { name: 'TECNOAR', unit: 'LONDRINA', classification: 'B' },
   { name: 'TICK TITOS', unit: 'LONDRINA', classification: 'B' },
   { name: 'VS GOLD', unit: 'LONDRINA', classification: 'B' },
@@ -49,7 +52,7 @@ const clientsData: { name: string, unit: string, classification: ClientClassific
   { name: 'ZM HOSPITALAR', unit: 'LONDRINA', classification: 'B' },
 ];
 
-const getResponsavel = (unit: string, classification: ClientClassification): string => {
+export const getResponsavel = (unit: string, classification: ClientClassification): string => {
     if (unit === 'CURITIBA') {
         return 'Marcos';
     }
@@ -62,39 +65,21 @@ const getResponsavel = (unit: string, classification: ClientClassification): str
         }
     }
     
-    // Fallback for any other unit
     return 'Indefinido';
 };
 
-export const initialClients: Client[] = clientsData.map((clientData, index) => {
-    const responsavel = getResponsavel(clientData.unit, clientData.classification);
-    const client: Client = {
-        id: `${index + 1}`,
-        name: clientData.name,
-        unit: clientData.unit,
-        responsavel: responsavel,
-        classification: clientData.classification,
-        lastVisitDate: null,
-        nextVisitDate: null,
-        visits: [],
-        isCritical: clientData.isCritical || false,
-    };
-
-    if (clientData.predefinedVisit) {
-        const visitDate = new Date(clientData.predefinedVisit);
-        // Using a more generic description for pre-defined visits
-        const feedback = 'Visita pré-definida no sistema.';
-        const followUp = 'Realizar visita conforme agendamento.';
-        
-        client.visits.push({
-            id: crypto.randomUUID(),
-            date: visitDate,
-            feedback: feedback,
-            followUp: followUp,
-            registeredBy: 'Sistema',
-        });
-        client.lastVisitDate = visitDate;
-    }
-
-    return client;
-});
+// This function can be used in a separate script to seed the database one time.
+export const getInitialClientsForSeed = () => {
+    return clientsData.map(clientData => {
+        const responsavel = getResponsavel(clientData.unit, clientData.classification);
+        return {
+            ...clientData,
+            responsavel,
+            lastVisitDate: null,
+            nextVisitDate: null,
+            visits: [],
+            isCritical: false,
+            createdAt: new Date(),
+        };
+    });
+};

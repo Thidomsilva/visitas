@@ -42,7 +42,7 @@ function CustomDay(props: DayProps) {
             <ScrollArea className="flex-1 -mt-1">
                 <div className="space-y-1 p-1">
                 {clientsOnThisDay.map(client => {
-                    const status = getVisitStatus(client.nextVisitDate);
+                    const status = getVisitStatus(client.nextVisitDate as Date | null);
                     return (
                     <button 
                         key={client.id}
@@ -65,7 +65,7 @@ function CustomDay(props: DayProps) {
 }
 
 export function CalendarView({ clients, onClientClick, selectedClientId, ...clientDetailProps }: CalendarViewProps) {
-  const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(new Date('2025-08-05')));
+  const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(new Date()));
   
   const selectedClient = useMemo(() => {
     if (!selectedClientId) return null;
@@ -75,14 +75,11 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
   const scheduledClientsByDay = useMemo(() => {
     const map = new Map<string, Client[]>();
     clients.forEach(client => {
-      client.visits.forEach(visit => {
-        const dayKey = format(visit.date, 'yyyy-MM-dd');
+      if (client.nextVisitDate) {
+        const dayKey = format(client.nextVisitDate as Date, 'yyyy-MM-dd');
         const existing = map.get(dayKey) || [];
-        // Avoid duplicates if a client has multiple visits on the same day (shouldn't happen with current logic)
-        if (!existing.some(c => c.id === client.id)) {
-            map.set(dayKey, [...existing, client]);
-        }
-      });
+        map.set(dayKey, [...existing, client]);
+      }
     });
     return map;
   }, [clients]);

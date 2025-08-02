@@ -1,8 +1,10 @@
+import { Timestamp } from 'firebase/firestore';
+
 export type ClientClassification = 'A' | 'B' | 'C';
 
 export type Visit = {
   id: string;
-  date: Date;
+  date: Date | Timestamp;
   feedback: string;
   followUp: string;
   registeredBy: string;
@@ -14,10 +16,11 @@ export type Client = {
   unit: string;
   responsavel: string;
   classification: ClientClassification;
-  lastVisitDate: Date | null;
-  nextVisitDate: Date | null;
+  lastVisitDate: Date | Timestamp | null;
+  nextVisitDate: Date | Timestamp | null;
   visits: Visit[];
   isCritical?: boolean;
+  createdAt: Timestamp;
 };
 
 export type VisitStatus = 'on-schedule' | 'approaching' | 'overdue' | 'no-visits';

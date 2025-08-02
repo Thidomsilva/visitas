@@ -95,7 +95,7 @@ export function ClientList({
       <ScrollArea className="flex-1">
         <div className="space-y-1 p-2">
           {clients.map(client => {
-            const status = getVisitStatus(client.nextVisitDate);
+            const status = getVisitStatus(client.nextVisitDate as Date | null);
             return (
               <button
                 key={client.id}
@@ -118,7 +118,7 @@ export function ClientList({
                   "text-sm mt-1",
                    selectedClientId === client.id ? "text-primary-foreground/80" : "text-muted-foreground"
                 )}>
-                  Próxima visita: {client.nextVisitDate ? formatDistanceToNow(client.nextVisitDate, { addSuffix: true, locale: ptBR }) : 'Não agendada'}
+                  Próxima visita: {client.nextVisitDate ? formatDistanceToNow(client.nextVisitDate as Date, { addSuffix: true, locale: ptBR }) : 'Não agendada'}
                 </p>
               </button>
             )

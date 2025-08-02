@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { addDays } from 'date-fns';
-import { initialClients } from "@/lib/data";
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp, writeBatch, getDocs, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { classificationIntervals, type Client, type Visit, type VisitStatus, ClientClassification } from "@/lib/types";
 import { getVisitStatus } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard-header";
@@ -15,13 +15,23 @@ import { ClientList } from "@/components/client-list";
 import { ClientDetail } from "@/components/client-detail";
 import { CalendarView } from "@/components/calendar-view";
 import { AnalyticsView } from "@/components/analytics-view";
-import { generateSchedule } from "@/lib/scheduler";
 import { cn } from "@/lib/utils";
+import { addDays } from "date-fns";
 
 type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
 type ViewType = "dashboard" | "calendar" | "analytics";
 type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
 
+function deserializeClient(client: Client): Client {
+  const toDate = (timestamp: any) => timestamp instanceof Timestamp ? timestamp.toDate() : timestamp;
+  return {
+    ...client,
+    lastVisitDate: client.lastVisitDate ? toDate(client.lastVisitDate) : null,
+    nextVisitDate: client.nextVisitDate ? toDate(client.nextVisitDate) : null,
+    createdAt: toDate(client.createdAt),
+    visits: client.visits.map(v => ({ ...v, date: toDate(v.date) })),
+  };
+}
 
 function DashboardSkeleton() {
   return (
@@ -50,9 +60,9 @@ function DashboardSkeleton() {
   )
 }
 
-
 function DashboardPageContent() {
-  const [clients, setClients] = useState<Client[]>(() => generateSchedule(initialClients));
+  const [clients, setClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [unitFilter, setUnitFilter] = useState<UnitFilterType>('all');
@@ -60,32 +70,37 @@ function DashboardPageContent() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [view, setView] = useState<ViewType>("dashboard");
 
+  useEffect(() => {
+    const q = collection(db, "clients");
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const clientsData = querySnapshot.docs.map(doc => deserializeClient({ id: doc.id, ...doc.data() } as Client));
+      setClients(clientsData);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const clientsForStats = useMemo(() => {
     return unitFilter === 'all' ? clients : clients.filter(c => c.unit === unitFilter);
   }, [clients, unitFilter]);
 
   const filteredClients = useMemo(() => {
     let sortedClients = [...clientsForStats].sort((a, b) => {
-      // Critical clients on top
       if (a.isCritical && !b.isCritical) return -1;
       if (!a.isCritical && b.isCritical) return 1;
 
-      const statusA = getVisitStatus(a.nextVisitDate);
-      const statusB = getVisitStatus(b.nextVisitDate);
+      const statusA = getVisitStatus(a.nextVisitDate as Date | null);
+      const statusB = getVisitStatus(b.nextVisitDate as Date | null);
 
       if (statusA === 'overdue' && statusB !== 'overdue') return -1;
       if (statusB === 'overdue' && statusA !== 'overdue') return 1;
-
       if (statusA === 'approaching' && statusB !== 'approaching') return -1;
       if (statusB === 'approaching' && statusA !== 'approaching') return 1;
 
-      if (a.nextVisitDate === null) return 1;
-      if (b.nextVisitDate === null) return -1;
-
-      if(a.nextVisitDate && b.nextVisitDate) {
-        return a.nextVisitDate.getTime() - b.nextVisitDate.getTime();
-      }
-      return 0;
+      const dateA = a.nextVisitDate ? (a.nextVisitDate as Date).getTime() : Infinity;
+      const dateB = b.nextVisitDate ? (b.nextVisitDate as Date).getTime() : Infinity;
+      
+      return dateA - dateB;
     });
 
     if (filter !== 'all') {
@@ -93,7 +108,7 @@ function DashboardPageContent() {
         const classification = filter.split('-')[1] as ClientClassification;
         sortedClients = sortedClients.filter(client => client.classification === classification);
       } else {
-        sortedClients = sortedClients.filter(client => getVisitStatus(client.nextVisitDate) === filter);
+        sortedClients = sortedClients.filter(client => getVisitStatus(client.nextVisitDate as Date | null) === filter);
       }
     }
     
@@ -104,16 +119,8 @@ function DashboardPageContent() {
     }
     
     return sortedClients;
-
   }, [clientsForStats, filter, searchQuery]);
-
-  useEffect(() => {
-    if (view === 'dashboard' && filteredClients.length > 0 && !selectedClientId) {
-      setSelectedClientId(filteredClients[0].id);
-    }
-  }, [filteredClients, selectedClientId, view]);
-
-
+  
   useEffect(() => {
      if (view === 'dashboard' && filteredClients.length > 0 && !filteredClients.find(c => c.id === selectedClientId)) {
       setSelectedClientId(filteredClients[0].id);
@@ -121,78 +128,70 @@ function DashboardPageContent() {
       setSelectedClientId(null);
     }
   }, [filter, clients, selectedClientId, filteredClients, searchQuery, view, unitFilter]);
-  
 
-  const handleVisitLogged = (clientId: string, visit: Visit) => {
-    setClients(prevClients => {
-      const clientIndex = prevClients.findIndex(c => c.id === clientId);
-      if (clientIndex === -1) return prevClients;
-  
-      const updatedClients = [...prevClients];
-      const clientToUpdate = { ...updatedClients[clientIndex] };
-  
-      // Add the new visit and sort
-      const sortedVisits = [visit, ...clientToUpdate.visits].sort((a,b) => b.date.getTime() - a.date.getTime());
-      
-      clientToUpdate.visits = sortedVisits;
-      clientToUpdate.lastVisitDate = visit.date;
+  const calculateNextVisitDate = (lastVisit: Date, classification: ClientClassification, isCritical?: boolean): Date => {
+    const interval = isCritical ? criticalInterval : classificationIntervals[classification];
+    const daysToAdd = Math.floor((interval.min + interval.max) / 2);
+    let nextDate = addDays(lastVisit, daysToAdd);
 
-      // Regenerate the rest of the schedule from this point
-      const regeneratedSchedule = generateSchedule(updatedClients, clientIndex);
+    // Basic weekend/holiday avoidance can be added here if needed
+    
+    return nextDate;
+  };
   
-      return regeneratedSchedule;
+  const handleVisitLogged = async (clientId: string, visit: Visit) => {
+    const clientRef = doc(db, "clients", clientId);
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    const newVisit = { ...visit, date: Timestamp.fromDate(visit.date as Date) };
+    const updatedVisits = [newVisit, ...client.visits.map(v => ({...v, date: Timestamp.fromDate(v.date as Date)}))].sort((a,b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
+    
+    const nextVisitDate = calculateNextVisitDate(visit.date as Date, client.classification, client.isCritical);
+
+    await updateDoc(clientRef, {
+      visits: updatedVisits,
+      lastVisitDate: newVisit.date,
+      nextVisitDate: Timestamp.fromDate(nextVisitDate),
     });
   };
 
-  const handleAddClient = (newClient: Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits' | 'isCritical'>) => {
-    const clientToAdd: Client = {
+  const handleAddClient = async (newClient: Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits' | 'isCritical' | 'createdAt'>) => {
+    const creationDate = new Date();
+    const nextVisitDate = calculateNextVisitDate(creationDate, newClient.classification, false);
+
+    const clientToAdd = {
       ...newClient,
-      id: crypto.randomUUID(),
       lastVisitDate: null,
-      nextVisitDate: null,
+      nextVisitDate: Timestamp.fromDate(nextVisitDate),
       visits: [],
       isCritical: false,
+      createdAt: Timestamp.fromDate(creationDate)
     };
-    const newClients = [clientToAdd, ...clients];
-    // We need to regenerate the schedule with the new client
-    const scheduledClients = generateSchedule(newClients);
-    setClients(scheduledClients);
-    setSelectedClientId(clientToAdd.id);
+    
+    const docRef = await addDoc(collection(db, "clients"), clientToAdd);
+    setSelectedClientId(docRef.id);
   }
 
-  const handleDeleteClient = (clientId: string) => {
-    setClients(prev => {
-      const newClients = prev.filter(client => client.id !== clientId);
-      // Regenerate schedule after deleting
-      const scheduledClients = generateSchedule(newClients);
-       if (selectedClientId === clientId) {
-        setSelectedClientId(scheduledClients.length > 0 ? scheduledClients[0].id : null);
-      }
-      return scheduledClients;
-    });
+  const handleDeleteClient = async (clientId: string) => {
+    await deleteDoc(doc(db, "clients", clientId));
+    if (selectedClientId === clientId) {
+      setSelectedClientId(filteredClients.length > 0 ? filteredClients[0].id : null);
+    }
   }
 
-  const handleToggleCriticalStatus = (clientId: string) => {
-    setClients(prevClients => {
-      const clientIndex = prevClients.findIndex(c => c.id === clientId);
-      if (clientIndex === -1) return prevClients;
-  
-      const updatedClients = [...prevClients];
-      // Create a deep copy of the client to modify
-      const clientToUpdate = JSON.parse(JSON.stringify(updatedClients[clientIndex]));
-  
-      clientToUpdate.isCritical = !clientToUpdate.isCritical;
-      
-      // To force a reschedule starting from now, we set the last visit to today.
-      // This will make the scheduler calculate the next visit from this point.
-      clientToUpdate.lastVisitDate = new Date().toISOString();
-  
-      updatedClients[clientIndex] = clientToUpdate;
-  
-      // Regenerate the schedule for all clients, as one client's change can affect others.
-      const regeneratedSchedule = generateSchedule(updatedClients, 0);
-  
-      return regeneratedSchedule;
+  const handleToggleCriticalStatus = async (clientId: string) => {
+    const clientRef = doc(db, "clients", clientId);
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    const newCriticalStatus = !client.isCritical;
+    const lastVisit = (client.lastVisitDate || client.createdAt) as Date;
+    const nextVisitDate = calculateNextVisitDate(lastVisit, client.classification, newCriticalStatus);
+
+    await updateDoc(clientRef, {
+      isCritical: newCriticalStatus,
+      nextVisitDate: Timestamp.fromDate(nextVisitDate),
     });
   }
 
@@ -203,7 +202,7 @@ function DashboardPageContent() {
 
   const stats = useMemo(() => {
     return clientsForStats.reduce((acc, client) => {
-      const status = getVisitStatus(client.nextVisitDate);
+      const status = getVisitStatus(client.nextVisitDate as Date | null);
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {} as Record<VisitStatus, number>);
@@ -222,6 +221,10 @@ function DashboardPageContent() {
   const handleFilterChange = (newFilter: FilterType) => {
     setFilter(currentFilter => currentFilter === newFilter ? 'all' : newFilter);
   };
+  
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   const renderView = () => {
     switch (view) {

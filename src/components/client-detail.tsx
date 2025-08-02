@@ -22,86 +22,18 @@ interface ClientDetailProps {
   onToggleCriticalStatus: (clientId: string) => void;
 }
 
-function UpcomingVisitItem({ visit, onRegister, client }: { visit: Visit, onRegister: (visitData: Omit<Visit, 'id' | 'date' | 'registeredBy'>) => void, client: Client }) {
-    const [isEditing, setIsEditing] = useState(false);
-    const [feedback, setFeedback] = useState('');
-    const [followUp, setFollowUp] = useState('');
-
-    const handleRegister = () => {
-        if (!feedback || !followUp) {
-            alert("Por favor, preencha os campos de feedback e plano de ação.");
-            return;
-        }
-        onRegister({ feedback, followUp });
-        setIsEditing(false);
-        setFeedback('');
-        setFollowUp('');
-    }
-
-    if (!isEditing) {
-        return (
-            <div className="p-4 border rounded-lg flex justify-between items-center">
-                <div>
-                    <p className="font-semibold">{format(visit.date, 'PPP', { locale: ptBR })}</p>
-                    <p className="text-muted-foreground mt-1 text-sm">{visit.feedback}</p>
-                </div>
-                <Button onClick={() => setIsEditing(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Registrar
-                </Button>
-            </div>
-        )
-    }
-
-    return (
-         <div className="p-4 border rounded-lg space-y-4">
-             <p className="font-semibold">{format(visit.date, 'PPP', { locale: ptBR })}</p>
-            <Textarea 
-                placeholder="Feedback / Resumo da visita..."
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                rows={3}
-            />
-            <Textarea
-                placeholder="Ações de Acompanhamento / Próximos passos..."
-                value={followUp}
-                onChange={(e) => setFollowUp(e.target.value)}
-                rows={3}
-            />
-            <div className="flex justify-end gap-2">
-                <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancelar</Button>
-                <Button onClick={handleRegister}>
-                    <Save className="mr-2 h-4 w-4"/>
-                    Salvar Visita
-                </Button>
-            </div>
-        </div>
-    )
-}
-
-
 export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCriticalStatus }: ClientDetailProps) {
   const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   
-  const status = client ? getVisitStatus(client.nextVisitDate) : 'no-visits';
+  const status = useMemo(() => client ? getVisitStatus(client.nextVisitDate as Date | null) : 'no-visits', [client]);
   
-  const futureVisits = useMemo(() => {
-    if (!client) return [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return [...client.visits]
-      .filter(v => v.date >= today)
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [client]);
-
-  const handleQuickRegister = (visitData: Omit<Visit, 'id' | 'date' | 'registeredBy'>) => {
+  const handleLogVisit = (visitData: Omit<Visit, 'id' | 'date'>) => {
     if (!client) return;
     const newVisit: Visit = {
       id: crypto.randomUUID(),
       date: new Date(), // The visit happens now
       ...visitData,
-      registeredBy: client.responsavel,
     };
     onVisitLogged(client.id, newVisit);
   };
@@ -178,32 +110,31 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
             </div>
             <div className="p-4 bg-slate-50 rounded-lg">
                 <h4 className="font-semibold text-muted-foreground">Próxima Visita</h4>
-                <p>{client.nextVisitDate ? format(client.nextVisitDate, 'PPP', { locale: ptBR }) : 'N/D'}</p>
+                <p>{client.nextVisitDate ? format(client.nextVisitDate as Date, 'PPP', { locale: ptBR }) : 'N/D'}</p>
             </div>
         </div>
         <div>
             <div className="flex items-center justify-between mb-2">
-                <h4 className="text-lg font-semibold">Próximas Visitas</h4>
+                <h4 className="text-lg font-semibold">Histórico de Visitas</h4>
                 <Button variant="link" onClick={() => setHistoryDialogOpen(true)}>
                     <History className="mr-2 h-4 w-4"/>
                     Ver histórico completo
                 </Button>
             </div>
-            {futureVisits.length > 0 ? (
-                <div className="space-y-4">
-                    {futureVisits.slice(0, 2).map(visit => (
-                        <UpcomingVisitItem
-                            key={visit.id}
-                            visit={visit}
-                            client={client}
-                            onRegister={handleQuickRegister}
-                        />
+            {client.visits.length > 0 ? (
+                <div className="space-y-4 border rounded-lg p-4 max-h-96 overflow-y-auto">
+                    {client.visits.slice(0, 5).map(visit => (
+                         <div key={visit.id} className="pb-4 border-b last:border-b-0">
+                           <p className="font-semibold">{format(visit.date as Date, 'PPP, HH:mm', { locale: ptBR })} <span className="text-muted-foreground font-normal">- por {visit.registeredBy}</span></p>
+                           <p className="mt-2 text-sm"><strong className="text-muted-foreground">Feedback:</strong> {visit.feedback}</p>
+                           <p className="mt-1 text-sm"><strong className="text-muted-foreground">Acompanhamento:</strong> {visit.followUp}</p>
+                         </div>
                     ))}
                 </div>
             ): (
                 <div className="text-center text-muted-foreground py-8 border rounded-lg">
-                    <p>Nenhuma visita futura agendada.</p>
-                     <Button variant="link" className="mt-2" onClick={() => setLogDialogOpen(true)}>Registrar uma visita agora?</Button>
+                    <p>Nenhuma visita registrada.</p>
+                     <Button variant="link" className="mt-2" onClick={() => setLogDialogOpen(true)}>Registrar a primeira visita agora?</Button>
                 </div>
             )}
         </div>

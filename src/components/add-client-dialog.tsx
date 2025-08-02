@@ -10,24 +10,24 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import type { Client, ClientClassification } from '@/lib/types';
+import { getResponsavel } from '@/lib/data';
 
 const clientSchema = z.object({
   name: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
   unit: z.enum(['LONDRINA', 'CURITIBA'], {
     errorMap: () => ({ message: "Selecione uma unidade" })
   }),
-  responsavel: z.string().min(3, 'O nome do responsável deve ter pelo menos 3 caracteres.'),
   classification: z.enum(['A', 'B', 'C'], {
     errorMap: () => ({ message: "Selecione uma classificação" })
   }),
 });
 
-type NewClientForm = Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits' | 'isCritical'>;
+type NewClientForm = Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits' | 'isCritical' | 'responsavel' | 'createdAt'>;
 
 interface AddClientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onClientAdded: (client: NewClientForm) => void;
+  onClientAdded: (client: Omit<Client, 'id' | 'lastVisitDate' | 'nextVisitDate' | 'visits' | 'isCritical' | 'createdAt'>) => void;
 }
 
 export function AddClientDialog({ open, onOpenChange, onClientAdded }: AddClientDialogProps) {
@@ -36,16 +36,16 @@ export function AddClientDialog({ open, onOpenChange, onClientAdded }: AddClient
     defaultValues: {
       name: '',
       unit: undefined,
-      responsavel: '',
       classification: undefined,
     },
   });
 
   function onSubmit(values: z.infer<typeof clientSchema>) {
+    const responsavel = getResponsavel(values.unit, values.classification as ClientClassification);
     const newClientData = {
       name: values.name,
       unit: values.unit,
-      responsavel: values.responsavel,
+      responsavel: responsavel,
       classification: values.classification as ClientClassification,
     };
     onClientAdded(newClientData);
@@ -59,7 +59,7 @@ export function AddClientDialog({ open, onOpenChange, onClientAdded }: AddClient
         <DialogHeader>
           <DialogTitle>Adicionar Novo Cliente</DialogTitle>
           <DialogDescription>
-            Preencha os detalhes abaixo para criar um novo perfil de cliente.
+            Preencha os detalhes abaixo para criar um novo perfil de cliente. O responsável será atribuído automaticamente.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -102,19 +102,6 @@ export function AddClientDialog({ open, onOpenChange, onClientAdded }: AddClient
                         <FormLabel className="font-normal">Curitiba</FormLabel>
                       </FormItem>
                     </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="responsavel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Responsável</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Thiago" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
