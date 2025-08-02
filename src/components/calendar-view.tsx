@@ -34,16 +34,13 @@ interface CalendarViewProps {
 
 function CustomDay(props: DayProps & { clientsOnThisDay: Client[]; onClientClick: (id: string) => void }) {
     const { date, displayMonth, clientsOnThisDay, onClientClick } = props;
-    const dayNumber = format(date, 'd');
-    const isOutside = props.outside;
-    const isToday = isSameDay(date, new Date());
     
     return (
-        <div className={cn("h-full flex flex-col", isOutside ? "text-muted-foreground/50" : "bg-card")}>
-            <time dateTime={date.toISOString()} className={cn("p-1 text-right text-xs md:text-sm", isToday && "font-bold text-primary")}>
-                {dayNumber}
+        <div className={cn("h-full flex flex-col p-1", props.outside && "text-muted-foreground/50")}>
+            <time dateTime={date.toISOString()} className={cn("text-right text-xs md:text-sm", isSameDay(date, new Date()) && "font-bold text-primary")}>
+                {format(date, 'd')}
             </time>
-            <ScrollArea className="flex-1 -mt-1">
+            <div className="flex-1 -mt-1 overflow-y-auto">
                 <div className="space-y-1 p-1">
                 {clientsOnThisDay.map(client => {
                     const status = getVisitStatus(client.nextVisitDate as Date | null);
@@ -52,18 +49,17 @@ function CustomDay(props: DayProps & { clientsOnThisDay: Client[]; onClientClick
                         key={client.id}
                         onClick={() => onClientClick(client.id)}
                         className={cn(
-                        "w-full text-left p-1 md:p-1.5 rounded-md border text-[10px] md:text-xs leading-tight transition-all",
+                        "w-full text-left p-1 rounded-md border text-[10px] md:text-xs leading-tight transition-all",
                          statusIndicatorConfig[status],
                          'hover:shadow-md'
                         )}
                     >
-                        <p className="font-semibold truncate">{client.name}</p>
-                        <p className="opacity-80 hidden md:block">{client.responsavel}</p>
+                        <p className="font-semibold">{client.name}</p>
                     </button>
                     )
                 })}
                 </div>
-            </ScrollArea>
+            </div>
         </div>
     );
 }
@@ -114,29 +110,11 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
 
   return (
     <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 gap-4">
-      <div className="flex-1 md:flex-[3] bg-card rounded-lg border flex flex-col h-full">
+      <div className="flex-1 md:flex-[3] bg-card rounded-lg border flex flex-col">
          <DayPicker
             locale={ptBR}
             month={currentMonth}
             onMonthChange={setCurrentMonth}
-            className="h-full w-full flex flex-col"
-            classNames={{
-              month_caption: 'p-2',
-              head: 'border-b',
-              head_cell: 'w-[calc(100%/7)] py-2 text-sm text-muted-foreground',
-              table: 'flex-1 border-collapse w-full',
-              tbody: 'h-full grid grid-rows-6',
-              row: 'grid grid-cols-7 border-b last:border-b-0',
-              cell: 'border-r last:border-r-0',
-              day: 'h-full w-full p-0',
-            }}
-            components={{
-              Day: (props: DayProps) => {
-                const dayKey = format(props.date, 'yyyy-MM-dd');
-                const clientsOnThisDay = allVisitsByDay.get(dayKey) || [];
-                return <CustomDay {...props} clientsOnThisDay={clientsOnThisDay} onClientClick={handleClientClick}/>
-              }
-            }}
             disabled={date => !isBusinessDay(date)}
             showOutsideDays
           />

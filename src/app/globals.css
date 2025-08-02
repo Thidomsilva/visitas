@@ -84,6 +84,20 @@
 }
 
 /* Default react-day-picker styles */
+.rdp {
+    --rdp-cell-size: 40px;
+    --rdp-caption-font-size: 18px;
+    --rdp-background-color: transparent;
+    --rdp-accent-color: hsl(var(--accent));
+    --rdp-accent-color-dark: hsl(var(--accent));
+    --rdp-foreground-color: hsl(var(--foreground));
+    --rdp-foreground-color-dark: hsl(var(--foreground));
+    --rdp-border-color: hsl(var(--border));
+    --rdp-border-color-dark: hsl(var(--border));
+    --rdp-outline: 2px solid hsl(var(--ring));
+    --rdp-outline-selected: 2px solid hsl(var(--ring));
+}
+
 .rdp-button:hover:not([aria-disabled=true]) {
   @apply bg-accent text-accent-foreground;
 }
@@ -102,23 +116,4 @@
 
 .rdp-day_outside {
   @apply text-muted-foreground/50;
-}
-
-.rdp-day_disabled {
-  @apply text-muted-foreground/50 bg-slate-50;
-}
-
-/* Custom Calendar View Styles */
-.rdp-tbody {
-    display: grid;
-    grid-template-rows: repeat(6, 1fr);
-}
-
-.rdp-row {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-}
-
-.rdp-cell {
-    @apply border-t first:border-l;
 }
