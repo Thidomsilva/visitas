@@ -8,7 +8,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const statusIndicatorConfig = {
   'overdue': 'bg-red-500',
@@ -25,9 +26,19 @@ interface ClientListProps {
   onSelectClient: (id: string) => void;
   filter: FilterType;
   onFilterChange: (value: FilterType) => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
 }
 
-export function ClientList({ clients, selectedClientId, onSelectClient, filter, onFilterChange }: ClientListProps) {
+export function ClientList({ 
+  clients, 
+  selectedClientId, 
+  onSelectClient, 
+  filter, 
+  onFilterChange,
+  searchQuery,
+  onSearchChange
+}: ClientListProps) {
   
   const getTabValue = () => {
     if (filter.startsWith('class-')) {
@@ -38,8 +49,17 @@ export function ClientList({ clients, selectedClientId, onSelectClient, filter, 
   
   return (
     <div className="w-full max-w-xs border-r flex flex-col bg-slate-50/50 dark:bg-slate-900/50">
-       <div className="p-4">
+       <div className="p-4 space-y-4">
         <h2 className="text-xl font-bold">Clientes ({clients.length})</h2>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Buscar cliente..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
         <Tabs value={getTabValue()} onValueChange={(val) => onFilterChange(val as FilterType)} className="mt-4">
             <TabsList className="grid w-full grid-cols-3 h-auto flex-wrap">
               <TabsTrigger value="all" className="flex-1">Todos</TabsTrigger>

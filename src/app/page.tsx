@@ -21,12 +21,13 @@ type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
 export default function DashboardPage() {
   const [clients, setClients] = useState<Client[]>(() => generateSchedule(initialClients));
   const [filter, setFilter] = useState<FilterType>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isMounted, setIsMounted] = useState(false);
   const [isAddClientOpen, setAddClientOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   const filteredClients = useMemo(() => {
-    const sortedClients = [...clients].sort((a, b) => {
+    let sortedClients = [...clients].sort((a, b) => {
       // Critical clients on top
       if (a.isCritical && !b.isCritical) return -1;
       if (!a.isCritical && b.isCritical) return 1;
@@ -48,16 +49,25 @@ export default function DashboardPage() {
       }
       return 0;
     });
-    
-    if (filter === 'all') return sortedClients;
 
-    if (filter.startsWith('class-')) {
-      const classification = filter.split('-')[1] as ClientClassification;
-      return sortedClients.filter(client => client.classification === classification);
+    if (filter !== 'all') {
+      if (filter.startsWith('class-')) {
+        const classification = filter.split('-')[1] as ClientClassification;
+        sortedClients = sortedClients.filter(client => client.classification === classification);
+      } else {
+        sortedClients = sortedClients.filter(client => getVisitStatus(client.nextVisitDate) === filter);
+      }
     }
     
-    return sortedClients.filter(client => getVisitStatus(client.nextVisitDate) === filter);
-  }, [clients, filter]);
+    if (searchQuery) {
+        sortedClients = sortedClients.filter(client => 
+            client.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }
+    
+    return sortedClients;
+
+  }, [clients, filter, searchQuery]);
   
   useEffect(() => {
     setIsMounted(true);
@@ -76,7 +86,7 @@ export default function DashboardPage() {
     } else if (filteredClients.length === 0) {
       setSelectedClientId(null);
     }
-  }, [filter, clients, selectedClientId, filteredClients]);
+  }, [filter, clients, selectedClientId, filteredClients, searchQuery]);
   
 
   const handleVisitLogged = (clientId: string, visit: Visit) => {
@@ -194,6 +204,8 @@ export default function DashboardPage() {
               onSelectClient={setSelectedClientId}
               filter={filter}
               onFilterChange={(value) => setFilter(value as FilterType)}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
             />
           <main className="flex-1 flex flex-col p-6 overflow-y-auto">
              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
