@@ -54,10 +54,11 @@ function deserializeClient(client: Client): Client {
   };
 }
 
-const holidaysDateObjects = nationalHolidays.map(holiday => new Date(holiday + 'T12:00:00'));
+const holidaysDateObjects = nationalHolidays.map(holiday => new Date(holiday));
 
 const isHoliday = (date: Date): boolean => {
-    return holidaysDateObjects.some(holiday => isSameDay(date, holiday));
+    const adjustedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+    return holidaysDateObjects.some(holiday => isSameDay(adjustedDate, holiday));
 }
 
 const findNextBusinessDay = (date: Date): Date => {
@@ -125,26 +126,11 @@ function DashboardPageContent() {
   useEffect(() => {
     const q = collection(db, "clients");
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const clientsData = querySnapshot.docChanges().map(change => {
-        return deserializeClient({ id: change.doc.id, ...change.doc.data() } as Client);
+      const clientsData = querySnapshot.docs.map(doc => {
+        return deserializeClient({ id: doc.id, ...doc.data() } as Client);
       });
       
-      setClients(prevClients => {
-        let newClients = [...prevClients];
-        clientsData.forEach(changedClient => {
-          const index = newClients.findIndex(c => c.id === changedClient.id);
-          if (index > -1) {
-            if (querySnapshot.docChanges().find(c => c.doc.id === changedClient.id)?.type === 'removed') {
-              newClients.splice(index, 1);
-            } else {
-              newClients[index] = changedClient;
-            }
-          } else {
-            newClients.push(changedClient);
-          }
-        });
-        return newClients;
-      });
+      setClients(clientsData);
 
       if (isLoading) setIsLoading(false);
     }, (error) => {
