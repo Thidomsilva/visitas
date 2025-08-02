@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp, getDocs, query, setDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp, getDocs, query, setDoc, writeBatch, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { classificationIntervals, type Client, type Visit, type VisitStatus, ClientClassification } from "@/lib/types";
 import { getVisitStatus } from "@/lib/utils";
@@ -19,8 +19,18 @@ import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { getInitialClientsForSeed } from "@/lib/data";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
 type ViewType = "dashboard" | "calendar" | "analytics";
@@ -42,16 +52,13 @@ const calculateNextVisitDate = (lastVisit: Date, classification: ClientClassific
     const interval = isCritical ? criticalInterval : classificationIntervals[classification];
     const daysToAdd = Math.floor(Math.random() * (interval.max - interval.min + 1)) + interval.min;
     let nextDate = addDays(lastVisit, daysToAdd);
-
-    // Basic weekend/holiday avoidance can be added here if needed
-    
     return nextDate;
   };
 
 function DashboardSkeleton() {
   return (
      <div className="min-h-screen bg-background flex flex-col">
-      <DashboardHeader onAddClient={() => {}} view="dashboard" onViewChange={() => {}}/>
+      <DashboardHeader onAddClient={() => {}} onViewChange={() => {}} onSeedDatabase={() => {}} isSeeding={false} view="dashboard"/>
       <div className="flex-1 flex overflow-hidden">
         <div className="w-80 border-r p-4 space-y-4">
           <Skeleton className="h-10 w-full" />
@@ -90,6 +97,9 @@ function DashboardPageContent() {
   useEffect(() => {
     const q = collection(db, "clients");
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      if (querySnapshot.metadata.hasPendingWrites) {
+        return;
+      }
       const clientsData = querySnapshot.docs.map(doc => deserializeClient({ id: doc.id, ...doc.data() } as Client));
       setClients(clientsData);
       setIsLoading(false);
@@ -107,25 +117,30 @@ function DashboardPageContent() {
 
   const handleSeedDatabase = async () => {
     setIsSeeding(true);
-    toast({ title: "Iniciando processo...", description: "Populando o banco de dados. Isso pode levar alguns instantes." });
+    toast({ title: "Iniciando processo...", description: "Limpando o banco de dados e preparando para popular. Isso pode levar alguns instantes." });
 
     try {
+        // 1. Deletar todos os clientes existentes
         const clientsCollectionRef = collection(db, "clients");
         const existingClientsSnapshot = await getDocs(query(clientsCollectionRef));
-
         if (!existingClientsSnapshot.empty) {
-            toast({
-                title: "Banco de Dados Já Populado",
-                description: "Os clientes iniciais já foram cadastrados.",
-                variant: "destructive"
+            const deleteBatch = writeBatch(db);
+            existingClientsSnapshot.docs.forEach(doc => {
+                deleteBatch.delete(doc.ref);
             });
-            setIsSeeding(false);
-            return;
+            await deleteBatch.commit();
+            toast({ title: "Banco de dados limpo", description: "Clientes anteriores foram removidos com sucesso." });
         }
+        
+        // Aguardar um pouco para garantir que o onSnapshot processe a deleção
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
+
+        // 2. Popular com os novos dados
         const initialClients = getInitialClientsForSeed();
         const endDate = new Date('2025-12-31');
         const dailyVisitCount = new Map<string, number>();
+        let clientsAddedCount = 0;
 
         for (const clientData of initialClients) {
             const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
@@ -133,17 +148,16 @@ function DashboardPageContent() {
 
             const projectedVisits: Visit[] = [];
             
-            while (currentVisitDate <= endDate) {
+            while (currentVisitDate < endDate) {
                 let nextProjectedDate = calculateNextVisitDate(currentVisitDate, clientData.classification, clientData.isCritical);
 
                 if (nextProjectedDate > endDate) break;
 
-                // Check and enforce the daily visit limit
                 let visitDateKey = format(nextProjectedDate, 'yyyy-MM-dd');
                 while ((dailyVisitCount.get(visitDateKey) || 0) >= 2) {
-                    nextProjectedDate = addDays(nextProjectedDate, 1);
+                    nextProjectedDate = addDays(nextProjectedDate, 1); // Pula para o próximo dia
                     visitDateKey = format(nextProjectedDate, 'yyyy-MM-dd');
-                    if (nextProjectedDate > endDate) break;
+                    if (nextProjectedDate > endDate) break; // Checa novamente após pular o dia
                 }
                 
                 if (nextProjectedDate > endDate) break;
@@ -174,20 +188,20 @@ function DashboardPageContent() {
                 visits: projectedVisits,
             };
             
-            const docRef = doc(clientsCollectionRef);
-            await setDoc(docRef, clientToAdd);
+            await addDoc(clientsCollectionRef, clientToAdd);
+            clientsAddedCount++;
         }
 
         toast({
             title: "Sucesso!",
-            description: `${initialClients.length} clientes e suas visitas projetadas foram cadastrados.`,
+            description: `${clientsAddedCount} clientes e suas visitas projetadas foram cadastrados até 31/12/2025.`,
         });
 
     } catch (error) {
         console.error("Erro ao popular banco de dados:", error);
         toast({
             title: "Erro ao Popular Banco de Dados",
-            description: "Ocorreu um erro ao cadastrar os clientes iniciais.",
+            description: "Ocorreu um erro ao cadastrar os clientes iniciais. Verifique o console para mais detalhes.",
             variant: "destructive"
         });
     } finally {
@@ -345,23 +359,6 @@ function DashboardPageContent() {
     return <DashboardSkeleton />;
   }
 
-  if (!isLoading && clients.length === 0) {
-    return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-            <div className="text-center space-y-4">
-                <Database className="mx-auto h-16 w-16 text-muted-foreground" />
-                <h1 className="text-2xl font-bold">Banco de Dados Vazio</h1>
-                <p className="text-muted-foreground">
-                    Nenhum cliente foi encontrado. Para começar, popule o banco de dados com a lista inicial.
-                </p>
-                <Button onClick={handleSeedDatabase} disabled={isSeeding}>
-                    {isSeeding ? "Populando..." : "Popular Clientes Iniciais"}
-                </Button>
-            </div>
-        </div>
-    );
-  }
-
   const renderView = () => {
     switch (view) {
       case 'dashboard':
@@ -498,6 +495,8 @@ function DashboardPageContent() {
             onAddClient={() => setAddClientOpen(true)}
             view={view}
             onViewChange={setView}
+            onSeedDatabase={handleSeedDatabase}
+            isSeeding={isSeeding}
         />
         {renderView()}
       </div>
