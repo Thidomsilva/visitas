@@ -37,13 +37,21 @@ type ViewType = "dashboard" | "calendar" | "analytics";
 type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
 
 function deserializeClient(client: Client): Client {
-  const toDate = (timestamp: any) => timestamp instanceof Timestamp ? timestamp.toDate() : (timestamp ? new Date(timestamp) : null);
+  const toDate = (timestamp: any): Date | null => {
+    if (!timestamp) return null;
+    if (timestamp instanceof Timestamp) return timestamp.toDate();
+    if (timestamp instanceof Date) return timestamp;
+    // Tenta converter de string ou número, se aplicável
+    const d = new Date(timestamp);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   return {
     ...client,
-    lastVisitDate: client.lastVisitDate, // Keep as Timestamp or null
+    lastVisitDate: toDate(client.lastVisitDate),
     nextVisitDate: toDate(client.nextVisitDate),
-    createdAt: client.createdAt, // Keep as Timestamp
-    visits: client.visits.map(v => ({ ...v, date: toDate(v.date) })),
+    createdAt: toDate(client.createdAt) as Date, // createdAt deve sempre existir
+    visits: client.visits.map(v => ({ ...v, date: toDate(v.date) as Date })),
   };
 }
 
@@ -237,12 +245,20 @@ function DashboardPageContent() {
     const clientRef = doc(db, "clients", clientId);
     const client = clients.find(c => c.id === clientId);
     if (!client) return;
-
-    const newVisit = { ...visit, date: Timestamp.fromDate(visit.date as Date) };
-    const updatedVisits = [newVisit, ...client.visits.map(v => ({...v, date: Timestamp.fromMillis((v.date as Date).getTime())}))].sort((a,b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
+  
+    const visitDate = visit.date instanceof Date ? visit.date : new Date();
+    const newVisit = { ...visit, date: Timestamp.fromDate(visitDate) };
     
-    const nextVisitDate = calculateNextVisitDate(visit.date as Date, client.classification, client.isCritical);
-
+    const clientVisitsAsTimestamps = client.visits.map(v => {
+      const vDate = v.date instanceof Date ? v.date : new Date();
+      return {...v, date: Timestamp.fromDate(vDate)};
+    });
+  
+    const updatedVisits = [newVisit, ...clientVisitsAsTimestamps]
+      .sort((a,b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
+    
+    const nextVisitDate = calculateNextVisitDate(visitDate, client.classification, client.isCritical);
+  
     await updateDoc(clientRef, {
       visits: updatedVisits,
       lastVisitDate: newVisit.date,
@@ -290,45 +306,30 @@ function DashboardPageContent() {
     const clientRef = doc(db, "clients", clientId);
     const client = clients.find(c => c.id === clientId);
     if (!client) return;
-
+  
     const newCriticalStatus = !client.isCritical;
     let dateToCalculateFrom: Date;
-
+  
     if (newCriticalStatus) {
       // Ao se tornar crítico, calcula a partir de hoje
       dateToCalculateFrom = new Date();
     } else {
       // Ao deixar de ser crítico, recalcula a partir da última visita ou da criação
-      const lastVisit = client.lastVisitDate instanceof Timestamp 
-        ? (client.lastVisitDate as Timestamp).toDate() 
-        : client.lastVisitDate;
-
-      const createdAt = client.createdAt instanceof Timestamp 
-        ? (client.createdAt as Timestamp).toDate() 
-        : client.createdAt;
-
-      dateToCalculateFrom = lastVisit ? lastVisit : createdAt;
+      // As datas já estão como objetos Date por causa do deserializeClient
+      dateToCalculateFrom = client.lastVisitDate || client.createdAt;
     }
-
+  
     const nextVisitDate = calculateNextVisitDate(dateToCalculateFrom, client.classification, newCriticalStatus);
-
+  
     await updateDoc(clientRef, {
       isCritical: newCriticalStatus,
       nextVisitDate: Timestamp.fromDate(nextVisitDate),
     });
-};
+  };
 
   const selectedClient = useMemo(() => {
     if (!selectedClientId) return null;
-    const client = clients.find(c => c.id === selectedClientId) || null;
-    if (client) {
-      return {
-        ...client,
-        lastVisitDate: client.lastVisitDate instanceof Timestamp ? client.lastVisitDate.toDate() : client.lastVisitDate,
-        createdAt: client.createdAt instanceof Timestamp ? client.createdAt.toDate() : client.createdAt,
-      }
-    }
-    return null;
+    return clients.find(c => c.id === selectedClientId) || null;
   }, [selectedClientId, clients]);
 
   const stats = useMemo(() => {
@@ -520,3 +521,5 @@ export default function DashboardPage() {
 
   return <DashboardPageContent />;
 }
+
+    
