@@ -32,14 +32,9 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
   
   const status = useMemo(() => client ? getVisitStatus(client.nextVisitDate as Date | null) : 'no-visits', [client]);
   
-  const handleLogVisit = (visitData: Omit<Visit, 'id' | 'date'>) => {
+  const handleLogVisit = (visit: Visit) => {
     if (!client) return;
-    const newVisit: Visit = {
-      id: crypto.randomUUID(),
-      date: new Date(), // The visit happens now
-      ...visitData,
-    };
-    onVisitLogged(client.id, newVisit);
+    onVisitLogged(client.id, visit);
   };
   
   const handleDateSelect = (date: Date | undefined) => {
@@ -174,7 +169,7 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
         onOpenChange={setLogDialogOpen}
         client={client}
         onVisitLogged={(visit) => {
-          onVisitLogged(client.id, visit);
+          handleLogVisit(visit);
           setLogDialogOpen(false);
         }}
       />
