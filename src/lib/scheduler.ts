@@ -1,4 +1,4 @@
-import { addDays, isMonday, isSaturday, isSunday, format } from 'date-fns';
+import { addDays, subDays, isMonday, isSaturday, isSunday, format } from 'date-fns';
 import { classificationIntervals, type Client } from './types';
 
 // Helper function to get a random integer between min and max (inclusive)
@@ -35,7 +35,6 @@ export function generateSchedule(clients: Client[], startIndex = 0): Client[] {
   const updatedClients = [...clients];
 
   const startDate = new Date('2025-08-05T00:00:00');
-  const startDateCurveA = new Date('2025-08-12T00:00:00');
   const endDate = new Date('2025-12-31T23:59:59');
 
   // Populate schedule with existing visits from the initial part of the array
@@ -51,14 +50,25 @@ export function generateSchedule(clients: Client[], startIndex = 0): Client[] {
   for (let i = startIndex; i < updatedClients.length; i++) {
     const client = { ...updatedClients[i] };
     
-    let initialDate = client.classification === 'A' ? startDateCurveA : startDate;
-    let lastVisitDate = client.lastVisitDate ? new Date(client.lastVisitDate) : initialDate;
+    // Simulate a past "last visit" to generate a realistic schedule from the start date
+    let lastVisitDate: Date;
 
-    // Clear future visits if we are rescheduling
-    if (startIndex > 0 && client.lastVisitDate) {
-      client.visits = client.visits.filter(v => v.date <= client.lastVisitDate!);
+    if (client.lastVisitDate) {
+        lastVisitDate = new Date(client.lastVisitDate);
+        // Clear future visits if we are rescheduling from a real visit
+         if (startIndex > 0) {
+            client.visits = client.visits.filter(v => v.date <= client.lastVisitDate!);
+        } else {
+            client.visits = [];
+        }
     } else {
-      client.visits = [];
+       // This is a new client or initial schedule generation.
+       // Create a fictional last visit date in the past to make the schedule start immediately.
+       const interval = classificationIntervals[client.classification];
+       const randomDaysPast = getRandomInt(0, interval.max); // From 0 to max days ago
+       const baseDate = client.classification === 'A' ? new Date('2025-08-12T00:00:00') : startDate;
+       lastVisitDate = subDays(baseDate, randomDaysPast);
+       client.visits = []; // Ensure we are starting fresh
     }
 
     let nextVisitDate = new Date(lastVisitDate);
@@ -86,22 +96,29 @@ export function generateSchedule(clients: Client[], startIndex = 0): Client[] {
       }
 
       nextVisitDate = candidateDate;
-      const newVisit = {
-        id: crypto.randomUUID(),
-        date: nextVisitDate,
-        feedback: 'Visita agendada automaticamente.',
-        followUp: 'Realizar visita na data agendada.',
-      };
       
-      client.visits.push(newVisit);
+      // We only add the visit if it's on or after the official start date
+      if(nextVisitDate >= startDate) {
+        const newVisit = {
+            id: crypto.randomUUID(),
+            date: nextVisitDate,
+            feedback: 'Visita agendada automaticamente.',
+            followUp: 'Realizar visita na data agendada.',
+        };
+        client.visits.push(newVisit);
+      }
+      
       lastVisitDate = nextVisitDate;
     }
 
     client.visits.sort((a,b) => a.date.getTime() - b.date.getTime());
-    client.lastVisitDate = client.visits.length > 0 ? client.visits[client.visits.length - 1].date : null;
     
+    // The actual last visit date is the most recent one in the past relative to today
     const today = new Date();
     today.setHours(0,0,0,0);
+    const pastVisits = client.visits.filter(v => v.date < today);
+    client.lastVisitDate = pastVisits.length > 0 ? pastVisits[pastVisits.length - 1].date : null;
+    
     client.nextVisitDate = client.visits.find(v => v.date >= today)?.date || null;
 
     updatedClients[i] = client;
