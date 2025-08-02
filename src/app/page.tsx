@@ -18,11 +18,38 @@ import { cn } from "@/lib/utils";
 
 type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
 
-export default function DashboardPage() {
+function DashboardSkeleton() {
+  return (
+     <div className="min-h-screen bg-background flex flex-col">
+      <DashboardHeader onAddClient={() => {}}/>
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-80 border-r p-4 space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <div className="space-y-2">
+            {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+          </div>
+        </div>
+        <main className="flex-1 p-6">
+           <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6 mb-6">
+              <Skeleton className="h-[108px]" />
+              <Skeleton className="h-[108px]" />
+              <Skeleton className="h-[108px]" />
+              <Skeleton className="h-[108px]" />
+              <Skeleton className="h-[108px]" />
+              <Skeleton className="h-[108px]" />
+            </div>
+          <Skeleton className="h-[500px]" />
+        </main>
+      </div>
+    </div>
+  )
+}
+
+
+function DashboardPageContent() {
   const [clients, setClients] = useState<Client[]>(() => generateSchedule(initialClients));
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isMounted, setIsMounted] = useState(false);
   const [isAddClientOpen, setAddClientOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
@@ -68,16 +95,12 @@ export default function DashboardPage() {
     return sortedClients;
 
   }, [clients, filter, searchQuery]);
-  
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
-    if (isMounted && filteredClients.length > 0 && !selectedClientId) {
+    if (filteredClients.length > 0 && !selectedClientId) {
       setSelectedClientId(filteredClients[0].id);
     }
-  }, [isMounted, filteredClients, selectedClientId]);
+  }, [filteredClients, selectedClientId]);
 
 
   useEffect(() => {
@@ -185,14 +208,10 @@ export default function DashboardPage() {
     }, {} as Record<ClientClassification, number>);
   }, [clients]);
   
-  if (!isMounted) {
-    return <DashboardSkeleton />;
-  }
-  
   const handleFilterChange = (newFilter: FilterType) => {
     setFilter(currentFilter => currentFilter === newFilter ? 'all' : newFilter);
   };
-
+  
   return (
     <>
       <div className="min-h-screen bg-background flex flex-col">
@@ -308,29 +327,16 @@ export default function DashboardPage() {
   );
 }
 
-function DashboardSkeleton() {
-  return (
-     <div className="min-h-screen bg-background flex flex-col">
-      <DashboardHeader onAddClient={() => {}}/>
-      <div className="flex-1 flex overflow-hidden">
-        <div className="w-80 border-r p-4 space-y-4">
-          <Skeleton className="h-10 w-full" />
-          <div className="space-y-2">
-            {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-          </div>
-        </div>
-        <main className="flex-1 p-6">
-           <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6 mb-6">
-              <Skeleton className="h-[108px]" />
-              <Skeleton className="h-[108px]" />
-              <Skeleton className="h-[108px]" />
-              <Skeleton className="h-[108px]" />
-              <Skeleton className="h-[108px]" />
-              <Skeleton className="h-[108px]" />
-            </div>
-          <Skeleton className="h-[500px]" />
-        </main>
-      </div>
-    </div>
-  )
+export default function DashboardPage() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return <DashboardSkeleton />;
+  }
+
+  return <DashboardPageContent />;
 }
