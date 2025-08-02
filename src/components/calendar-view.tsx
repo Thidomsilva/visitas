@@ -75,13 +75,14 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
   const allVisitsByDay = useMemo(() => {
     const map = new Map<string, Client[]>();
     clients.forEach(client => {
-      client.visits.forEach(visit => {
-        const dayKey = format(visit.date as Date, 'yyyy-MM-dd');
+      if (client.nextVisitDate) {
+        const nextVisit = client.nextVisitDate instanceof Date ? client.nextVisitDate : client.nextVisitDate.toDate();
+        const dayKey = format(nextVisit, 'yyyy-MM-dd');
         const existing = map.get(dayKey) || [];
         if (!existing.some(c => c.id === client.id)) {
             map.set(dayKey, [...existing, client]);
         }
-      });
+      }
     });
     return map;
   }, [clients]);
