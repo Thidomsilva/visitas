@@ -136,66 +136,39 @@ function DashboardPageContent() {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
 
-        // 2. Popular com os novos dados
+        // 2. Popular com os novos dados, agendando apenas a primeira visita
         const initialClients = getInitialClientsForSeed();
-        const endDate = new Date('2025-12-31');
-        const dailyVisitCount = new Map<string, number>();
         let clientsAddedCount = 0;
 
         for (const clientData of initialClients) {
             const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
-            let currentVisitDate = creationDate;
-
-            const projectedVisits: Visit[] = [];
             
-            while (currentVisitDate < endDate) {
-                let nextProjectedDate = calculateNextVisitDate(currentVisitDate, clientData.classification, clientData.isCritical);
-
-                if (nextProjectedDate > endDate) break;
-
-                let visitDateKey = format(nextProjectedDate, 'yyyy-MM-dd');
-                while ((dailyVisitCount.get(visitDateKey) || 0) >= 2) {
-                    nextProjectedDate = addDays(nextProjectedDate, 1); // Pula para o próximo dia
-                    visitDateKey = format(nextProjectedDate, 'yyyy-MM-dd');
-                    if (nextProjectedDate > endDate) break; // Checa novamente após pular o dia
-                }
-                
-                if (nextProjectedDate > endDate) break;
-
-                dailyVisitCount.set(visitDateKey, (dailyVisitCount.get(visitDateKey) || 0) + 1);
-
-                projectedVisits.push({
-                    id: crypto.randomUUID(),
-                    date: Timestamp.fromDate(nextProjectedDate),
-                    feedback: "Visita simulada automaticamente pelo sistema.",
-                    followUp: "Nenhum acompanhamento necessário para visita simulada.",
-                    registeredBy: clientData.responsavel
-                });
-                
-                currentVisitDate = nextProjectedDate; 
-            }
-
-            const lastProjectedVisit = projectedVisits.length > 0 ? projectedVisits[projectedVisits.length - 1] : null;
-            const lastHistoricalVisitDate = lastProjectedVisit ? (lastProjectedVisit.date as Timestamp).toDate() : creationDate;
-            
-            const nextVisitDateAfterProjection = calculateNextVisitDate(lastHistoricalVisitDate, clientData.classification, clientData.isCritical);
+            // Calcula apenas a primeira visita a partir da data de criação
+            const nextVisitDate = calculateNextVisitDate(creationDate, clientData.classification, clientData.isCritical);
 
             const clientToAdd = {
                 ...clientData,
                 createdAt: Timestamp.fromDate(creationDate),
-                lastVisitDate: lastProjectedVisit ? lastProjectedVisit.date : null,
-                nextVisitDate: Timestamp.fromDate(nextVisitDateAfterProjection),
-                visits: projectedVisits,
+                lastVisitDate: null, // Começa sem visita anterior
+                nextVisitDate: Timestamp.fromDate(nextVisitDate),
+                visits: [], // Começa com histórico de visitas vazio
             };
             
             await addDoc(clientsCollectionRef, clientToAdd);
             clientsAddedCount++;
         }
 
-        toast({
-            title: "Sucesso!",
-            description: `${clientsAddedCount} clientes e suas visitas projetadas foram cadastrados até 31/12/2025.`,
-        });
+        if (clientsAddedCount > 0) {
+            toast({
+                title: "Sucesso!",
+                description: `${clientsAddedCount} clientes foram cadastrados e a primeira visita de cada um foi agendada.`,
+            });
+        } else {
+             toast({
+                title: "Banco de dados limpo!",
+                description: "O sistema está pronto para receber novos clientes.",
+            });
+        }
 
     } catch (error) {
         console.error("Erro ao popular banco de dados:", error);
@@ -522,3 +495,5 @@ export default function DashboardPage() {
 
   return <DashboardPageContent />;
 }
+
+    
