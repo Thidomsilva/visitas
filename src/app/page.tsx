@@ -8,7 +8,7 @@ import { classificationIntervals, type Client, type Visit, type VisitStatus, Cli
 import { getVisitStatus } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gem, Diamond, Star, CalendarClock, XCircle, CheckCircle2 } from 'lucide-react';
+import { Gem, Diamond, Star, CalendarClock, XCircle, CheckCircle2, Database } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddClientDialog } from "@/components/add-client-dialog";
 import { ClientList } from "@/components/client-list";
@@ -17,21 +17,35 @@ import { CalendarView } from "@/components/calendar-view";
 import { AnalyticsView } from "@/components/analytics-view";
 import { cn } from "@/lib/utils";
 import { addDays } from "date-fns";
+import { getInitialClientsForSeed } from "@/lib/data";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
 type ViewType = "dashboard" | "calendar" | "analytics";
 type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
 
 function deserializeClient(client: Client): Client {
-  const toDate = (timestamp: any) => timestamp instanceof Timestamp ? timestamp.toDate() : timestamp;
+  const toDate = (timestamp: any) => timestamp instanceof Timestamp ? timestamp.toDate() : (timestamp ? new Date(timestamp) : null);
   return {
     ...client,
-    lastVisitDate: client.lastVisitDate ? toDate(client.lastVisitDate) : null,
-    nextVisitDate: client.nextVisitDate ? toDate(client.nextVisitDate) : null,
+    lastVisitDate: toDate(client.lastVisitDate),
+    nextVisitDate: toDate(client.nextVisitDate),
     createdAt: toDate(client.createdAt),
     visits: client.visits.map(v => ({ ...v, date: toDate(v.date) })),
   };
 }
+
+const calculateNextVisitDate = (lastVisit: Date, classification: ClientClassification, isCritical?: boolean): Date => {
+    const criticalInterval = { min: 7, max: 7 };
+    const interval = isCritical ? criticalInterval : classificationIntervals[classification];
+    const daysToAdd = Math.floor((interval.min + interval.max) / 2);
+    let nextDate = addDays(lastVisit, daysToAdd);
+
+    // Basic weekend/holiday avoidance can be added here if needed
+    
+    return nextDate;
+  };
 
 function DashboardSkeleton() {
   return (
@@ -63,12 +77,14 @@ function DashboardSkeleton() {
 function DashboardPageContent() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSeeding, setIsSeeding] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [unitFilter, setUnitFilter] = useState<UnitFilterType>('all');
   const [isAddClientOpen, setAddClientOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [view, setView] = useState<ViewType>("dashboard");
+  const { toast } = useToast();
 
   useEffect(() => {
     const q = collection(db, "clients");
@@ -76,9 +92,70 @@ function DashboardPageContent() {
       const clientsData = querySnapshot.docs.map(doc => deserializeClient({ id: doc.id, ...doc.data() } as Client));
       setClients(clientsData);
       setIsLoading(false);
+    }, (error) => {
+        console.error("Erro ao buscar clientes: ", error);
+        toast({
+            title: "Erro de Conexão",
+            description: "Não foi possível conectar ao banco de dados. Verifique as regras de segurança do Firestore.",
+            variant: "destructive"
+        })
+        setIsLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
+
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+        const clientsCollectionRef = collection(db, "clients");
+        const existingClientsSnapshot = await getDocs(query(clientsCollectionRef));
+
+        if (!existingClientsSnapshot.empty) {
+            toast({
+                title: "Banco de Dados Já Populado",
+                description: "Os clientes iniciais já foram cadastrados.",
+                variant: "destructive"
+            });
+            setIsSeeding(false);
+            return;
+        }
+
+        const initialClients = getInitialClientsForSeed();
+        const batch = writeBatch(db);
+
+        initialClients.forEach(clientData => {
+            const docRef = doc(clientsCollectionRef); // Cria uma nova referência de documento com ID automático
+            const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
+            const nextVisitDate = calculateNextVisitDate(creationDate, clientData.classification, clientData.isCritical);
+            
+            const clientToAdd = {
+                ...clientData,
+                createdAt: Timestamp.fromDate(creationDate),
+                lastVisitDate: null,
+                nextVisitDate: Timestamp.fromDate(nextVisitDate),
+                visits: [],
+            };
+            batch.set(docRef, clientToAdd);
+        });
+
+        await batch.commit();
+        toast({
+            title: "Sucesso!",
+            description: `${initialClients.length} clientes foram cadastrados no banco de dados.`,
+        });
+
+    } catch (error) {
+        console.error("Erro ao popular banco de dados:", error);
+        toast({
+            title: "Erro ao Popular Banco de Dados",
+            description: "Ocorreu um erro ao cadastrar os clientes iniciais.",
+            variant: "destructive"
+        });
+    } finally {
+        setIsSeeding(false);
+    }
+  };
+
 
   const clientsForStats = useMemo(() => {
     return unitFilter === 'all' ? clients : clients.filter(c => c.unit === unitFilter);
@@ -129,15 +206,6 @@ function DashboardPageContent() {
     }
   }, [filter, clients, selectedClientId, filteredClients, searchQuery, view, unitFilter]);
 
-  const calculateNextVisitDate = (lastVisit: Date, classification: ClientClassification, isCritical?: boolean): Date => {
-    const interval = isCritical ? criticalInterval : classificationIntervals[classification];
-    const daysToAdd = Math.floor((interval.min + interval.max) / 2);
-    let nextDate = addDays(lastVisit, daysToAdd);
-
-    // Basic weekend/holiday avoidance can be added here if needed
-    
-    return nextDate;
-  };
   
   const handleVisitLogged = async (clientId: string, visit: Visit) => {
     const clientRef = doc(db, "clients", clientId);
@@ -224,6 +292,23 @@ function DashboardPageContent() {
   
   if (isLoading) {
     return <DashboardSkeleton />;
+  }
+
+  if (!isLoading && clients.length === 0) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+            <div className="text-center space-y-4">
+                <Database className="mx-auto h-16 w-16 text-muted-foreground" />
+                <h1 className="text-2xl font-bold">Banco de Dados Vazio</h1>
+                <p className="text-muted-foreground">
+                    Nenhum cliente foi encontrado. Para começar, popule o banco de dados com a lista inicial.
+                </p>
+                <Button onClick={handleSeedDatabase} disabled={isSeeding}>
+                    {isSeeding ? "Populando..." : "Popular Clientes Iniciais"}
+                </Button>
+            </div>
+        </div>
+    );
   }
 
   const renderView = () => {
@@ -336,7 +421,10 @@ function DashboardPageContent() {
         return (
           <CalendarView
             clients={clientsForStats}
-            onClientClick={(clientId) => setSelectedClientId(clientId)}
+            onClientClick={(clientId) => {
+                setView('dashboard');
+                setSelectedClientId(clientId);
+            }}
             selectedClientId={selectedClientId}
             onVisitLogged={handleVisitLogged}
             onDeleteClient={handleDeleteClient}

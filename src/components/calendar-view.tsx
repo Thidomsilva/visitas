@@ -50,7 +50,7 @@ function CustomDay(props: DayProps) {
                         className={cn(
                         "w-full text-left p-1.5 rounded-md border text-xs leading-tight transition-all",
                          statusIndicatorConfig[status],
-                         selectedClientId === client.id ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md'
+                         'hover:shadow-md'
                         )}
                     >
                         <p className="font-semibold truncate">{client.name}</p>
@@ -111,7 +111,10 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
           />
       </div>
       <div className="flex-1 h-full overflow-y-auto">
-        <ClientDetail client={selectedClient} {...clientDetailProps} />
+        <div className="p-4 bg-white rounded-lg border">
+            <h3 className="font-semibold text-lg mb-2">Cliente Selecionado</h3>
+            <p className="text-sm text-muted-foreground">Clique em um cliente no calendário para ver seus detalhes aqui e registrar uma visita.</p>
+        </div>
       </div>
     </div>
   );
