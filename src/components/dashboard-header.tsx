@@ -1,4 +1,4 @@
-import { Briefcase, PlusCircle, Settings, Trash2, LogOut } from "lucide-react";
+import { Briefcase, PlusCircle, Settings, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import {
@@ -9,17 +9,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { useAuth } from "@/context/auth-context";
 
 type ViewType = "dashboard" | "calendar" | "analytics";
@@ -65,31 +54,6 @@ export function DashboardHeader({ onAddClient, view, onViewChange, onSeedDatabas
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Configurações</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Trash2 className="mr-2 h-4 w-4"/>
-                                <span>Resetar & Popular Banco</span>
-                           </DropdownMenuItem>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Esta ação é irreversível. Todos os clientes e visitas existentes serão permanentemente
-                                    deletados. O banco de dados será então populado novamente com a lista inicial de clientes
-                                    e a projeção de visitas até o final de 2025.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={onSeedDatabase} disabled={isSeeding} className="bg-destructive hover:bg-destructive/90">
-                                {isSeeding ? "Processando..." : "Sim, resetar e popular"}
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                    <DropdownMenuSeparator />
                      <DropdownMenuItem onClick={logout}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Sair</span>
@@ -102,5 +66,3 @@ export function DashboardHeader({ onAddClient, view, onViewChange, onSeedDatabas
     </header>
   );
 }
-
-    
