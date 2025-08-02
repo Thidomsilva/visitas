@@ -83,6 +83,28 @@ function UpcomingVisitItem({ visit, onRegister, client }: { visit: Visit, onRegi
 export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCriticalStatus }: ClientDetailProps) {
   const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  
+  const status = client ? getVisitStatus(client.nextVisitDate) : 'no-visits';
+  
+  const futureVisits = useMemo(() => {
+    if (!client) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return [...client.visits]
+      .filter(v => v.date >= today)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [client]);
+
+  const handleQuickRegister = (visitData: Omit<Visit, 'id' | 'date' | 'registeredBy'>) => {
+    if (!client) return;
+    const newVisit: Visit = {
+      id: crypto.randomUUID(),
+      date: new Date(), // The visit happens now
+      ...visitData,
+      registeredBy: client.responsavel,
+    };
+    onVisitLogged(client.id, newVisit);
+  };
 
   if (!client) {
     return (
@@ -95,27 +117,6 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
         </Card>
       </div>
     );
-  }
-
-  const status = getVisitStatus(client.nextVisitDate);
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  
-  const futureVisits = useMemo(() => 
-    [...client.visits]
-        .filter(v => v.date >= today)
-        .sort((a,b) => a.date.getTime() - b.date.getTime())
-  , [client.visits]);
-
-
-  const handleQuickRegister = (visitData: Omit<Visit, 'id' | 'date' | 'registeredBy'>) => {
-      const newVisit: Visit = {
-        id: crypto.randomUUID(),
-        date: new Date(), // The visit happens now
-        ...visitData,
-        registeredBy: client.responsavel,
-      };
-      onVisitLogged(client.id, newVisit);
   }
 
   return (
