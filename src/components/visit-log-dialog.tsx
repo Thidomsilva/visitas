@@ -10,8 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Client, Visit } from '@/lib/types';
 
 const visitSchema = z.object({
-  feedback: z.string().min(10, 'Feedback must be at least 10 characters.'),
-  followUp: z.string().min(10, 'Follow-up actions must be at least 10 characters.'),
+  feedback: z.string().min(10, 'O feedback deve ter pelo menos 10 caracteres.'),
+  followUp: z.string().min(10, 'As ações de acompanhamento devem ter pelo menos 10 caracteres.'),
 });
 
 interface VisitLogDialogProps {
@@ -44,9 +44,9 @@ export function VisitLogDialog({ open, onOpenChange, client, onVisitLogged }: Vi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>Log Visit for {client.name}</DialogTitle>
+          <DialogTitle>Registrar Visita para {client.name}</DialogTitle>
           <DialogDescription>
-            Record details of your recent interaction. The visit date is automatically set to today.
+            Registre os detalhes de sua interação recente. A data da visita é definida automaticamente como hoje.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -56,9 +56,9 @@ export function VisitLogDialog({ open, onOpenChange, client, onVisitLogged }: Vi
               name="feedback"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Feedback / Summary</FormLabel>
+                  <FormLabel>Feedback / Resumo</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Describe the visit summary..." {...field} rows={4} />
+                    <Textarea placeholder="Descreva o resumo da visita..." {...field} rows={4} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -69,17 +69,17 @@ export function VisitLogDialog({ open, onOpenChange, client, onVisitLogged }: Vi
               name="followUp"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Follow-up Actions</FormLabel>
+                  <FormLabel>Ações de Acompanhamento</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="What are the next steps?" {...field} rows={4}/>
+                    <Textarea placeholder="Quais são os próximos passos?" {...field} rows={4}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit">Save Visit</Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              <Button type="submit">Salvar Visita</Button>
             </DialogFooter>
           </form>
         </Form>

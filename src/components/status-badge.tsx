@@ -4,22 +4,22 @@ import { CheckCircle2, AlertTriangle, XCircle, HelpCircle } from 'lucide-react';
 
 const statusConfig = {
   'on-schedule': {
-    label: 'On Schedule',
+    label: 'Em Dia',
     icon: CheckCircle2,
     className: 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700',
   },
   'approaching': {
-    label: 'Approaching',
+    label: 'Próxima',
     icon: AlertTriangle,
     className: 'bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700',
   },
   'overdue': {
-    label: 'Overdue',
+    label: 'Atrasada',
     icon: XCircle,
     className: 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700',
   },
   'no-visits': {
-    label: 'No Visits',
+    label: 'Sem Visitas',
     icon: HelpCircle,
     className: 'bg-muted text-muted-foreground border',
   },

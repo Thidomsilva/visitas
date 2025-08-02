@@ -76,7 +76,7 @@ export default function DashboardPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+              <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -85,7 +85,7 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Approaching Visits</CardTitle>
+              <CardTitle className="text-sm font-medium">Visitas Próximas</CardTitle>
               <Clock className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
@@ -94,7 +94,7 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overdue Visits</CardTitle>
+              <CardTitle className="text-sm font-medium">Visitas Atrasadas</CardTitle>
               <AlertTriangle className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
@@ -113,11 +113,11 @@ export default function DashboardPage() {
         <div>
           <Tabs value={filter} onValueChange={(value) => setFilter(value as FilterType)} className="mb-4">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="on-schedule">On Schedule</TabsTrigger>
-              <TabsTrigger value="approaching">Approaching</TabsTrigger>
-              <TabsTrigger value="overdue">Overdue</TabsTrigger>
-              <TabsTrigger value="no-visits">No Visits</TabsTrigger>
+              <TabsTrigger value="all">Todos</TabsTrigger>
+              <TabsTrigger value="on-schedule">Em Dia</TabsTrigger>
+              <TabsTrigger value="approaching">Próximas</TabsTrigger>
+              <TabsTrigger value="overdue">Atrasadas</TabsTrigger>
+              <TabsTrigger value="no-visits">Sem Visitas</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -129,8 +129,8 @@ export default function DashboardPage() {
 
           {filteredClients.length === 0 && (
              <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground bg-card rounded-lg">
-                <p className="text-lg font-semibold">No clients found</p>
-                <p>There are no clients matching the selected filter.</p>
+                <p className="text-lg font-semibold">Nenhum cliente encontrado</p>
+                <p>Não há clientes que correspondam ao filtro selecionado.</p>
             </div>
           )}
         </div>

@@ -11,6 +11,7 @@ import { User, Calendar, PlusCircle, History, Briefcase } from 'lucide-react';
 import { VisitLogDialog } from './visit-log-dialog';
 import { VisitHistoryDialog } from './visit-history-dialog';
 import { classificationIntervals } from '@/lib/types';
+import { ptBR } from 'date-fns/locale';
 
 interface ClientCardProps {
   client: Client;
@@ -22,7 +23,7 @@ export function ClientCard({ client, onVisitLogged }: ClientCardProps) {
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   
   const status = getVisitStatus(client.nextVisitDate);
-  const classificationInfo = `Class ${client.classification} (${classificationIntervals[client.classification]} days)`;
+  const classificationInfo = `Classe ${client.classification} (${classificationIntervals[client.classification]} dias)`;
 
   return (
     <>
@@ -48,7 +49,7 @@ export function ClientCard({ client, onVisitLogged }: ClientCardProps) {
           <div className="flex items-center text-sm text-muted-foreground">
             <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
             <span>
-              Next: {client.nextVisitDate ? format(client.nextVisitDate, 'PPP') : 'N/A'}
+              Próxima: {client.nextVisitDate ? format(client.nextVisitDate, 'PPP', { locale: ptBR }) : 'N/D'}
             </span>
 
           </div>
@@ -56,11 +57,11 @@ export function ClientCard({ client, onVisitLogged }: ClientCardProps) {
         <CardFooter className="flex justify-end gap-2 pt-4">
           <Button variant="outline" size="sm" onClick={() => setHistoryDialogOpen(true)}>
             <History className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">History</span>
+            <span className="hidden md:inline">Histórico</span>
           </Button>
           <Button size="sm" onClick={() => setLogDialogOpen(true)}>
             <PlusCircle className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Log Visit</span>
+            <span className="hidden md:inline">Registrar Visita</span>
           </Button>
         </CardFooter>
       </Card>

@@ -23,22 +23,22 @@ interface StatusChartProps {
 
 const chartConfig = {
   count: {
-    label: "Clients",
+    label: "Clientes",
   },
   'on-schedule': {
-    label: "On Schedule",
+    label: "Em Dia",
     color: "hsl(var(--chart-2))",
   },
   'approaching': {
-    label: "Approaching",
+    label: "Próxima",
     color: "hsl(var(--accent))",
   },
   'overdue': {
-    label: "Overdue",
+    label: "Atrasada",
     color: "hsl(var(--destructive))",
   },
   'no-visits': {
-    label: "No Visits",
+    label: "Sem Visitas",
     color: "hsl(var(--muted))",
   },
 } satisfies import("./ui/chart").ChartConfig;
@@ -49,8 +49,8 @@ export function StatusChart({ data, className }: StatusChartProps) {
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle>Visit Status</CardTitle>
-        <CardDescription>Client distribution by visit status</CardDescription>
+        <CardTitle>Status das Visitas</CardTitle>
+        <CardDescription>Distribuição de clientes por status de visita</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[200px] w-full">

@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -19,9 +20,9 @@ export function VisitHistoryDialog({ open, onOpenChange, clientName, visits }: V
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Visit History for {clientName}</DialogTitle>
+          <DialogTitle>Histórico de Visitas para {clientName}</DialogTitle>
            <DialogDescription>
-            A record of all past interactions and follow-ups.
+            Um registro de todas as interações e acompanhamentos anteriores.
           </DialogDescription>
         </DialogHeader>
         <div className="flex-grow min-h-0">
@@ -30,17 +31,17 @@ export function VisitHistoryDialog({ open, onOpenChange, clientName, visits }: V
               <Table>
                 <TableHeader className="sticky top-0 bg-background">
                   <TableRow>
-                    <TableHead className="w-[120px]">Date</TableHead>
+                    <TableHead className="w-[120px]">Data</TableHead>
                     <TableHead>Feedback</TableHead>
-                    <TableHead>Follow-up</TableHead>
+                    <TableHead>Acompanhamento</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sortedVisits.map((visit, index) => (
                     <TableRow key={visit.id}>
                       <TableCell className="font-medium whitespace-nowrap">
-                        {format(visit.date, 'PPP')}
-                        {index === 0 && <Badge variant="secondary" className="ml-2">Latest</Badge>}
+                        {format(visit.date, 'PPP', { locale: ptBR })}
+                        {index === 0 && <Badge variant="secondary" className="ml-2">Última</Badge>}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{visit.feedback}</TableCell>
                       <TableCell className="text-muted-foreground">{visit.followUp}</TableCell>
@@ -50,7 +51,7 @@ export function VisitHistoryDialog({ open, onOpenChange, clientName, visits }: V
               </Table>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
-                <p>No visit history available for this client.</p>
+                <p>Nenhum histórico de visitas disponível para este cliente.</p>
               </div>
             )}
           </ScrollArea>
