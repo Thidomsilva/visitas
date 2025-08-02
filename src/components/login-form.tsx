@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
+import { FirebaseError } from 'firebase/app';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -56,12 +57,27 @@ export function LoginForm() {
       await login(data.email, data.password);
       router.push('/');
     } catch (error: any) {
-      console.error(error);
+        let description = 'Ocorreu um erro desconhecido. Tente novamente.';
+        if (error instanceof FirebaseError) {
+            switch (error.code) {
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                case 'auth/invalid-credential':
+                    description = 'E-mail ou senha incorretos. Por favor, tente novamente.';
+                    break;
+                case 'auth/invalid-email':
+                    description = 'O formato do e-mail é inválido.';
+                    break;
+                default:
+                    description = 'Ocorreu um erro durante a autenticação. Verifique o console para mais detalhes.';
+            }
+        }
       toast({
         title: 'Erro de Autenticação',
-        description: 'E-mail ou senha incorretos. Por favor, tente novamente.',
+        description: description,
         variant: 'destructive',
       });
+    } finally {
       setIsLoading(false);
     }
   }
