@@ -2,10 +2,12 @@ import { Briefcase, PlusCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 
+type ViewType = "dashboard" | "calendar" | "analytics";
+
 interface DashboardHeaderProps {
   onAddClient: () => void;
-  view: 'dashboard' | 'calendar';
-  onViewChange: (view: 'dashboard' | 'calendar') => void;
+  view: ViewType;
+  onViewChange: (view: ViewType) => void;
 }
 
 export function DashboardHeader({ onAddClient, view, onViewChange }: DashboardHeaderProps) {
@@ -17,10 +19,11 @@ export function DashboardHeader({ onAddClient, view, onViewChange }: DashboardHe
             <Briefcase className="h-6 w-6 mr-2 text-primary" />
             <span className="font-bold text-lg">Visitas Sagacy</span>
           </div>
-          <Tabs value={view} onValueChange={(value) => onViewChange(value as 'dashboard' | 'calendar')}>
+          <Tabs value={view} onValueChange={(value) => onViewChange(value as ViewType)}>
             <TabsList>
-              <TabsTrigger value="dashboard">Visão do Painel</TabsTrigger>
-              <TabsTrigger value="calendar">Visão de Calendário</TabsTrigger>
+              <TabsTrigger value="dashboard">Painel</TabsTrigger>
+              <TabsTrigger value="calendar">Calendário</TabsTrigger>
+              <TabsTrigger value="analytics">Relatórios</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>

@@ -14,11 +14,12 @@ import { AddClientDialog } from "@/components/add-client-dialog";
 import { ClientList } from "@/components/client-list";
 import { ClientDetail } from "@/components/client-detail";
 import { CalendarView } from "@/components/calendar-view";
+import { AnalyticsView } from "@/components/analytics-view";
 import { generateSchedule } from "@/lib/scheduler";
 import { cn } from "@/lib/utils";
 
 type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
-type ViewType = "dashboard" | "calendar";
+type ViewType = "dashboard" | "calendar" | "analytics";
 type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
 
 
@@ -221,16 +222,11 @@ function DashboardPageContent() {
   const handleFilterChange = (newFilter: FilterType) => {
     setFilter(currentFilter => currentFilter === newFilter ? 'all' : newFilter);
   };
-  
-  return (
-    <>
-      <div className="min-h-screen bg-background flex flex-col">
-        <DashboardHeader 
-            onAddClient={() => setAddClientOpen(true)}
-            view={view}
-            onViewChange={setView}
-        />
-        {view === 'dashboard' ? (
+
+  const renderView = () => {
+    switch (view) {
+      case 'dashboard':
+        return (
           <div className="flex-1 flex overflow-hidden">
             <ClientList
               clients={filteredClients}
@@ -244,97 +240,97 @@ function DashboardPageContent() {
               onUnitFilterChange={setUnitFilter}
             />
             <main className="flex-1 flex flex-col p-6 overflow-y-auto">
-             <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6 mb-6">
-              <Card
-                className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'class-A' && 'ring-2 ring-primary')}
-                onClick={() => handleFilterChange('class-A')}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Classe A</CardTitle>
-                  <Gem className="h-4 w-4 text-blue-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{classificationStats['A'] || 0}</div>
-                  <p className="text-xs text-muted-foreground">do total de {clientsForStats.length}</p>
-                </CardContent>
-              </Card>
-              <Card
-                className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'class-B' && 'ring-2 ring-primary')}
-                onClick={() => handleFilterChange('class-B')}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Classe B</CardTitle>
-                  <Diamond className="h-4 w-4 text-purple-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{classificationStats['B'] || 0}</div>
-                   <p className="text-xs text-muted-foreground">do total de {clientsForStats.length}</p>
-                </CardContent>
-              </Card>
-              <Card
-                className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'class-C' && 'ring-2 ring-primary')}
-                onClick={() => handleFilterChange('class-C')}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Classe C</CardTitle>
-                  <Star className="h-4 w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{classificationStats['C'] || 0}</div>
-                   <p className="text-xs text-muted-foreground">do total de {clientsForStats.length}</p>
-                </CardContent>
-              </Card>
-              <Card
-                className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'approaching' && 'ring-2 ring-primary')}
-                onClick={() => handleFilterChange('approaching')}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Visitas Próximas</CardTitle>
-                  <CalendarClock className="h-4 w-4 text-orange-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats['approaching'] || 0}</div>
-                   <p className="text-xs text-muted-foreground">próximos 7 dias</p>
-                </CardContent>
-              </Card>
-              <Card
-                className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'overdue' && 'ring-2 ring-primary')}
-                onClick={() => handleFilterChange('overdue')}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Visitas Atrasadas</CardTitle>
-                  <XCircle className="h-4 w-4 text-red-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats['overdue'] || 0}</div>
-                   <p className="text-xs text-muted-foreground">clientes pendentes</p>
-                </CardContent>
-              </Card>
-              <Card
-                className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'on-schedule' && 'ring-2 ring-primary')}
-                onClick={() => handleFilterChange('on-schedule')}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Visitas em Dia</CardTitle>
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats['on-schedule'] || 0}</div>
-                   <p className="text-xs text-muted-foreground">clientes em dia</p>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <ClientDetail
-              client={selectedClient}
-              onVisitLogged={handleVisitLogged}
-              onDeleteClient={handleDeleteClient}
-              onToggleCriticalStatus={handleToggleCriticalStatus}
-            />
-
+              <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6 mb-6">
+                <Card
+                  className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'class-A' && 'ring-2 ring-primary')}
+                  onClick={() => handleFilterChange('class-A')}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Classe A</CardTitle>
+                    <Gem className="h-4 w-4 text-blue-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{classificationStats['A'] || 0}</div>
+                    <p className="text-xs text-muted-foreground">do total de {clientsForStats.length}</p>
+                  </CardContent>
+                </Card>
+                <Card
+                  className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'class-B' && 'ring-2 ring-primary')}
+                  onClick={() => handleFilterChange('class-B')}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Classe B</CardTitle>
+                    <Diamond className="h-4 w-4 text-purple-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{classificationStats['B'] || 0}</div>
+                    <p className="text-xs text-muted-foreground">do total de {clientsForStats.length}</p>
+                  </CardContent>
+                </Card>
+                <Card
+                  className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'class-C' && 'ring-2 ring-primary')}
+                  onClick={() => handleFilterChange('class-C')}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Classe C</CardTitle>
+                    <Star className="h-4 w-4 text-yellow-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{classificationStats['C'] || 0}</div>
+                    <p className="text-xs text-muted-foreground">do total de {clientsForStats.length}</p>
+                  </CardContent>
+                </Card>
+                <Card
+                  className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'approaching' && 'ring-2 ring-primary')}
+                  onClick={() => handleFilterChange('approaching')}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Visitas Próximas</CardTitle>
+                    <CalendarClock className="h-4 w-4 text-orange-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats['approaching'] || 0}</div>
+                    <p className="text-xs text-muted-foreground">próximos 7 dias</p>
+                  </CardContent>
+                </Card>
+                <Card
+                  className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'overdue' && 'ring-2 ring-primary')}
+                  onClick={() => handleFilterChange('overdue')}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Visitas Atrasadas</CardTitle>
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats['overdue'] || 0}</div>
+                    <p className="text-xs text-muted-foreground">clientes pendentes</p>
+                  </CardContent>
+                </Card>
+                <Card
+                  className={cn("cursor-pointer transition-all hover:ring-2 hover:ring-primary", filter === 'on-schedule' && 'ring-2 ring-primary')}
+                  onClick={() => handleFilterChange('on-schedule')}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Visitas em Dia</CardTitle>
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats['on-schedule'] || 0}</div>
+                    <p className="text-xs text-muted-foreground">clientes em dia</p>
+                  </CardContent>
+                </Card>
+              </div>
+              <ClientDetail
+                client={selectedClient}
+                onVisitLogged={handleVisitLogged}
+                onDeleteClient={handleDeleteClient}
+                onToggleCriticalStatus={handleToggleCriticalStatus}
+              />
             </main>
           </div>
-        ) : (
+        );
+      case 'calendar':
+        return (
           <CalendarView
             clients={clientsForStats}
             onClientClick={(clientId) => setSelectedClientId(clientId)}
@@ -343,7 +339,23 @@ function DashboardPageContent() {
             onDeleteClient={handleDeleteClient}
             onToggleCriticalStatus={handleToggleCriticalStatus}
           />
-        )}
+        );
+      case 'analytics':
+        return <AnalyticsView clients={clientsForStats} />;
+      default:
+        return null;
+    }
+  };
+  
+  return (
+    <>
+      <div className="min-h-screen bg-background flex flex-col">
+        <DashboardHeader 
+            onAddClient={() => setAddClientOpen(true)}
+            view={view}
+            onViewChange={setView}
+        />
+        {renderView()}
       </div>
       <AddClientDialog 
         open={isAddClientOpen}
