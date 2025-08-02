@@ -130,12 +130,12 @@ function DashboardPageContent() {
         initialClients.forEach(clientData => {
             const docRef = doc(clientsCollectionRef);
             const creationDate = clientData.createdAt ? (clientData.createdAt as Date) : new Date();
-            let currentVisitDate = creationDate;
+            let lastVisitDateForProjection = creationDate;
 
             const projectedVisits: Visit[] = [];
 
-            while (currentVisitDate <= endDate) {
-                let nextProjectedDate = calculateNextVisitDate(currentVisitDate, clientData.classification, clientData.isCritical);
+            while (lastVisitDateForProjection <= endDate) {
+                let nextProjectedDate = calculateNextVisitDate(lastVisitDateForProjection, clientData.classification, clientData.isCritical);
 
                 if (nextProjectedDate > endDate) break;
 
@@ -158,20 +158,21 @@ function DashboardPageContent() {
                     followUp: "Nenhum acompanhamento necessário para visita simulada.",
                     registeredBy: clientData.responsavel
                 });
-                currentVisitDate = nextProjectedDate; // Correctly update the date for the next iteration
+                
+                lastVisitDateForProjection = nextProjectedDate; // Correctly update the date for the next iteration
             }
 
             const lastProjectedVisit = projectedVisits.length > 0 ? projectedVisits[projectedVisits.length - 1] : null;
-            const lastVisitDate = lastProjectedVisit ? (lastProjectedVisit.date as Timestamp).toDate() : creationDate;
+            const lastHistoricalVisitDate = lastProjectedVisit ? (lastProjectedVisit.date as Timestamp).toDate() : creationDate;
             
             // Calculate next visit after the projection period
-            const nextVisitDate = calculateNextVisitDate(lastVisitDate, clientData.classification, clientData.isCritical);
+            const nextVisitDateAfterProjection = calculateNextVisitDate(lastHistoricalVisitDate, clientData.classification, clientData.isCritical);
 
             const clientToAdd = {
                 ...clientData,
                 createdAt: Timestamp.fromDate(creationDate),
                 lastVisitDate: lastProjectedVisit ? lastProjectedVisit.date : null,
-                nextVisitDate: Timestamp.fromDate(nextVisitDate),
+                nextVisitDate: Timestamp.fromDate(nextVisitDateAfterProjection),
                 visits: projectedVisits,
             };
             batch.set(docRef, clientToAdd);
@@ -513,3 +514,4 @@ export default function DashboardPage() {
     
 
     
+
