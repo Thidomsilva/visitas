@@ -7,7 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import { StatusBadge } from "./status-badge";
 import { getVisitStatus } from "@/lib/utils";
 import { Button } from "./ui/button";
-import { PlusCircle, Trash2, AlertTriangle } from "lucide-react";
+import { PlusCircle, Trash2, AlertTriangle, User } from "lucide-react";
 import { VisitHistoryDialog } from "./visit-history-dialog";
 import { useState } from "react";
 import { VisitLogDialog } from "./visit-log-dialog";
@@ -109,8 +109,16 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
                 <div className="space-y-4">
                     {sortedVisits.slice(0, 2).map(visit => (
                         <div key={visit.id} className="p-4 border rounded-lg">
-                            <p className="font-semibold">{format(visit.date, 'PPP', { locale: ptBR })}</p>
-                            <p className="text-muted-foreground mt-1 text-sm">{visit.feedback}</p>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-semibold">{format(visit.date, 'PPP', { locale: ptBR })}</p>
+                                    <p className="text-muted-foreground mt-1 text-sm">{visit.feedback}</p>
+                                </div>
+                                <div className="flex items-center text-xs text-muted-foreground gap-1.5 pt-1">
+                                    <User className="h-3 w-3" />
+                                    <span>{visit.registeredBy}</span>
+                                </div>
+                            </div>
                         </div>
                     ))}
                      {sortedVisits.length > 2 && (

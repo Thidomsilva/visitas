@@ -1,4 +1,4 @@
-import type { Client, ClientClassification } from './types';
+import type { Client, ClientClassification, Visit } from './types';
 
 const clientsData: { name: string, unit: string, classification: ClientClassification, predefinedVisit?: string, isCritical?: boolean }[] = [
   { name: 'AGEX', unit: 'LONDRINA', classification: 'C' },
@@ -58,11 +58,12 @@ const getResponsavel = (unit: string): string => {
 };
 
 export const initialClients: Client[] = clientsData.map((clientData, index) => {
+    const responsavel = getResponsavel(clientData.unit);
     const client: Client = {
         id: `${index + 1}`,
         name: clientData.name,
         unit: clientData.unit,
-        responsavel: getResponsavel(clientData.unit),
+        responsavel: responsavel,
         classification: clientData.classification,
         lastVisitDate: null,
         nextVisitDate: null,
@@ -81,6 +82,7 @@ export const initialClients: Client[] = clientsData.map((clientData, index) => {
             date: visitDate,
             feedback: feedback,
             followUp: followUp,
+            registeredBy: 'Sistema',
         });
         client.lastVisitDate = visitDate;
     }

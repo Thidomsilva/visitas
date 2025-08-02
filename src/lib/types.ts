@@ -5,6 +5,7 @@ export type Visit = {
   date: Date;
   feedback: string;
   followUp: string;
+  registeredBy: string;
 };
 
 export type Client = {

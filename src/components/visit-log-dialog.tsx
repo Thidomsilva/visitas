@@ -35,6 +35,7 @@ export function VisitLogDialog({ open, onOpenChange, client, onVisitLogged }: Vi
       id: crypto.randomUUID(),
       date: new Date(),
       ...values,
+      registeredBy: client.responsavel,
     };
     onVisitLogged(newVisit);
     form.reset();

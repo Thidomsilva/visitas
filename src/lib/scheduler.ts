@@ -1,5 +1,5 @@
 import { addDays, subDays, isMonday, isSaturday, isSunday, format } from 'date-fns';
-import { classificationIntervals, criticalInterval, type Client } from './types';
+import { classificationIntervals, criticalInterval, type Client, type Visit } from './types';
 
 // Helper function to get a random integer between min and max (inclusive)
 function getRandomInt(min: number, max: number) {
@@ -131,13 +131,14 @@ export function generateSchedule(clients: Client[], startIndex = 0): Client[] {
       
       // We only add the visit if it's on or after the official start date
       if(nextVisitDate >= startDate) {
-        const newVisit = {
-            id: crypto.randomUUID(),
+        const newVisit: Omit<Visit, 'id'> & { id?: string } = {
             date: nextVisitDate,
             feedback: 'Visita agendada automaticamente.',
             followUp: 'Realizar visita na data agendada.',
+            registeredBy: 'Sistema',
         };
-        client.visits.push(newVisit);
+        (newVisit as Visit).id = crypto.randomUUID();
+        client.visits.push(newVisit as Visit);
       }
       
       lastVisitDate = nextVisitDate;

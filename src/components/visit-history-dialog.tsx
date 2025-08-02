@@ -34,6 +34,7 @@ export function VisitHistoryDialog({ open, onOpenChange, clientName, visits }: V
                     <TableHead className="w-[120px]">Data</TableHead>
                     <TableHead>Feedback</TableHead>
                     <TableHead>Acompanhamento</TableHead>
+                    <TableHead>Registrado por</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -45,6 +46,7 @@ export function VisitHistoryDialog({ open, onOpenChange, clientName, visits }: V
                       </TableCell>
                       <TableCell className="text-muted-foreground">{visit.feedback}</TableCell>
                       <TableCell className="text-muted-foreground">{visit.followUp}</TableCell>
+                      <TableCell className="text-muted-foreground">{visit.registeredBy}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
