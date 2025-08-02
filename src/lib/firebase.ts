@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
-// IMPORTANT: Replace this with your actual Firebase project configuration
+// IMPORTANT: This is the actual Firebase project configuration for your app.
 const firebaseConfig = {
   "projectId": "visitas-sagacy",
   "appId": "1:835253296541:web:8ada22aab3e879c27b2374",
