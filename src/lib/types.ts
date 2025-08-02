@@ -20,7 +20,7 @@ export type Client = {
   nextVisitDate: Date | Timestamp | null;
   visits: Visit[];
   isCritical?: boolean;
-  createdAt: Timestamp;
+  createdAt: Timestamp | Date;
 };
 
 export type VisitStatus = 'on-schedule' | 'approaching' | 'overdue' | 'no-visits';
@@ -35,3 +35,26 @@ export const criticalInterval = {
     min: 7,
     max: 7,
 };
+
+export function deserializeClient(client: Client): Client {
+    const toDate = (timestamp: any): Date | null => {
+        if (!timestamp) return null;
+        if (timestamp instanceof Date) return timestamp;
+        // Firestore Timestamps have a toDate() method
+        if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+            return timestamp.toDate();
+        }
+        // Fallback for string or number representations
+        const d = new Date(timestamp);
+        return isNaN(d.getTime()) ? null : d;
+    };
+    
+    return {
+        ...client,
+        lastVisitDate: toDate(client.lastVisitDate),
+        nextVisitDate: toDate(client.nextVisitDate),
+        // Ensure createdAt is always a Date object, defaulting to now if missing
+        createdAt: toDate(client.createdAt) || new Date(),
+        visits: Array.isArray(client.visits) ? client.visits.map(v => ({ ...v, date: toDate(v.date) as Date })) : [],
+    };
+}

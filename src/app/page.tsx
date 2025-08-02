@@ -1,12 +1,11 @@
 
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp, getDocs, query, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { classificationIntervals, type Client, type Visit, type VisitStatus, ClientClassification } from "@/lib/types";
-import { getVisitStatus } from "@/lib/utils";
+import { type Client, type Visit, type VisitStatus, ClientClassification, deserializeClient } from "@/lib/types";
+import { getVisitStatus, calculateNextVisitDate, findNextBusinessDay } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gem, Diamond, Star, CalendarClock, XCircle, CheckCircle2 } from 'lucide-react';
@@ -17,76 +16,17 @@ import { ClientDetail } from "@/components/client-detail";
 import { CalendarView } from "@/components/calendar-view";
 import { AnalyticsView } from "@/components/analytics-view";
 import { cn } from "@/lib/utils";
-import { addDays, format, isSameDay, getDay } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from 'date-fns/locale';
-import { getInitialClientsForSeed, nationalHolidays } from "@/lib/data";
+import { getInitialClientsForSeed } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 
+
 type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
 type ViewType = "dashboard" | "calendar" | "analytics";
 type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
-
-function deserializeClient(client: Client): Client {
-    const toDate = (timestamp: any): Date | null => {
-        if (!timestamp) return null;
-        if (timestamp instanceof Date) return timestamp;
-        // Firestore Timestamps have a toDate() method
-        if (timestamp.toDate && typeof timestamp.toDate === 'function') {
-            return timestamp.toDate();
-        }
-        // Fallback for string or number representations
-        const d = new Date(timestamp);
-        return isNaN(d.getTime()) ? null : d;
-    };
-    
-    return {
-        ...client,
-        lastVisitDate: toDate(client.lastVisitDate),
-        nextVisitDate: toDate(client.nextVisitDate),
-        // Ensure createdAt is always a Date object, defaulting to now if missing
-        createdAt: toDate(client.createdAt) || new Date(),
-        visits: Array.isArray(client.visits) ? client.visits.map(v => ({ ...v, date: toDate(v.date) as Date })) : [],
-    };
-}
-
-
-const holidaysDateObjects = nationalHolidays.map(holiday => {
-    const [year, month, day] = holiday.split('-').map(Number);
-    // Create date in UTC to avoid timezone issues
-    return new Date(Date.UTC(year, month - 1, day));
-});
-
-const isHoliday = (date: Date): boolean => {
-    // Compare using UTC dates to be consistent
-    const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    return holidaysDateObjects.some(holidayDate => isSameDay(utcDate, holidayDate));
-};
-
-
-const findNextBusinessDay = (date: Date): Date => {
-    let nextDate = new Date(date);
-    while (true) {
-        const dayOfWeek = getDay(nextDate);
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-        const isHolidayDate = isHoliday(nextDate);
-
-        if (!isWeekend && !isHolidayDate) {
-            return nextDate;
-        }
-        nextDate = addDays(nextDate, 1);
-    }
-};
-
-const calculateNextVisitDate = (lastVisit: Date, classification: ClientClassification, isCritical?: boolean): Date => {
-    const criticalInterval = { min: 7, max: 7 };
-    const interval = isCritical ? criticalInterval : classificationIntervals[classification];
-    const daysToAdd = Math.floor(Math.random() * (interval.max - interval.min + 1)) + interval.min;
-    let nextDate = addDays(lastVisit, daysToAdd);
-    
-    return findNextBusinessDay(nextDate);
-  };
 
 function DashboardSkeleton() {
   return (
@@ -551,3 +491,5 @@ export default function DashboardPage() {
 
   return <DashboardPageContent />;
 }
+
+    
