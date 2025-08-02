@@ -40,8 +40,8 @@ const clientsData: { name: string, unit: string, classification: ClientClassific
   { name: 'PRIMELOG', unit: 'LONDRINA', classification: 'C' },
   { name: 'RODOMIGLIO', unit: 'LONDRINA', classification: 'A' },
   { name: 'ROUTE BEER', unit: 'LONDRINA', classification: 'B' },
-  { name: 'RS TRANSMISSÃO', unit: 'LONDRINA', classification: 'B' },
-  { name: 'SPIRONELLI', unit: 'LONDRINA', classification: 'C' },
+  { name: 'RS TRANSMISSÃO', unit: 'LONDRINA', classification: 'B', predefinedVisit: '2025-07-21T10:00:00' },
+  { name: 'SPIRONELLI', unit: 'LONDRina', classification: 'C' },
   { name: 'TECNOAR', unit: 'LONDRINA', classification: 'B' },
   { name: 'TICK TITOS', unit: 'LONDRINA', classification: 'B' },
   { name: 'VS GOLD', unit: 'LONDRINA', classification: 'B' },
@@ -71,11 +71,14 @@ export const initialClients: Client[] = clientsData.map((clientData, index) => {
 
     if (clientData.predefinedVisit) {
         const visitDate = new Date(clientData.predefinedVisit);
+        const feedback = visitDate > new Date('2025-08-01T00:00:00') ? 'Visita pré-agendada.' : 'Última visita realizada.';
+        const followUp = visitDate > new Date('2025-08-01T00:00:00') ? 'Realizar visita conforme agendamento.' : 'Agendar próxima visita.';
+        
         client.visits.push({
             id: crypto.randomUUID(),
             date: visitDate,
-            feedback: 'Visita pré-agendada.',
-            followUp: 'Realizar visita conforme agendamento.',
+            feedback: feedback,
+            followUp: followUp,
         });
         client.lastVisitDate = visitDate; // Treat this as the last visit to calculate the next one from it
     }
