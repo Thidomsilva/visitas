@@ -32,16 +32,15 @@ interface CalendarViewProps {
     onUpdateClassification: (clientId: string, newClassification: ClientClassification) => void;
 }
 
-function CustomDay(props: DayProps) {
-    const { clientsOnThisDay, onClientClick } = props.day.appContext as { 
-        clientsOnThisDay: Client[], 
-        onClientClick: (id: string) => void,
-    };
-    const dayNumber = format(props.date, 'd');
-
+function CustomDay(props: DayProps & { clientsOnThisDay: Client[]; onClientClick: (id: string) => void }) {
+    const { date, displayMonth, clientsOnThisDay, onClientClick } = props;
+    const dayNumber = format(date, 'd');
+    const isOutside = props.outside;
+    const isToday = isSameDay(date, new Date());
+    
     return (
-        <div className="flex flex-col h-full w-full">
-            <time dateTime={props.date.toISOString()} className={cn("self-end p-1 text-xs md:text-sm", props.day.isToday && "font-bold text-primary")}>
+        <div className={cn("h-full flex flex-col", isOutside ? "text-muted-foreground/50" : "bg-card")}>
+            <time dateTime={date.toISOString()} className={cn("p-1 text-right text-xs md:text-sm", isToday && "font-bold text-primary")}>
                 {dayNumber}
             </time>
             <ScrollArea className="flex-1 -mt-1">
@@ -115,25 +114,27 @@ export function CalendarView({ clients, onClientClick, selectedClientId, ...clie
 
   return (
     <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 gap-4">
-      <div className="flex-1 md:flex-[3] bg-card rounded-lg border p-1 md:p-4 h-full flex flex-col">
+      <div className="flex-1 md:flex-[3] bg-card rounded-lg border flex flex-col h-full">
          <DayPicker
             locale={ptBR}
             month={currentMonth}
             onMonthChange={setCurrentMonth}
-            className="h-full w-full"
+            className="h-full w-full flex flex-col"
             classNames={{
-                month: "flex flex-col h-full",
-                table: "h-full w-full border-collapse flex-grow",
-                tbody: "h-full flex flex-col",
-                row: "flex-grow flex w-full",
-                cell: "w-[calc(100%/7)] border-t first:border-l flex flex-col relative",
+              month_caption: 'p-2',
+              head: 'border-b',
+              head_cell: 'w-[calc(100%/7)] py-2 text-sm text-muted-foreground',
+              table: 'flex-1 border-collapse w-full',
+              tbody: 'h-full grid grid-rows-6',
+              row: 'grid grid-cols-7 border-b last:border-b-0',
+              cell: 'border-r last:border-r-0',
+              day: 'h-full w-full p-0',
             }}
             components={{
               Day: (props: DayProps) => {
                 const dayKey = format(props.date, 'yyyy-MM-dd');
                 const clientsOnThisDay = allVisitsByDay.get(dayKey) || [];
-                const appContext = { clientsOnThisDay, onClientClick: handleClientClick };
-                return <CustomDay {...props} day={{...props.day, appContext}}/>
+                return <CustomDay {...props} clientsOnThisDay={clientsOnThisDay} onClientClick={handleClientClick}/>
               }
             }}
             disabled={date => !isBusinessDay(date)}

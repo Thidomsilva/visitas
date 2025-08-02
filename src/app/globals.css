@@ -83,34 +83,42 @@
   }
 }
 
-/* Custom styles for react-day-picker */
-.rdp-month {
-    @apply h-full flex flex-col;
+/* Default react-day-picker styles */
+.rdp-button:hover:not([aria-disabled=true]) {
+  @apply bg-accent text-accent-foreground;
 }
-.rdp-table {
-    @apply h-full flex-grow border-collapse;
+
+.rdp-button:focus-visible:not([aria-disabled=true]) {
+  @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
 }
-.rdp-tbody {
-    @apply h-full;
+
+.rdp-day_selected, .rdp-day_selected:hover, .rdp-day_selected:focus {
+  @apply bg-primary text-primary-foreground;
 }
-.rdp-row {
-    @apply h-[calc(100%/6)]; /* Each row takes 1/6th of the height */
-}
-.rdp-head_cell {
-    @apply text-sm text-muted-foreground font-normal;
-}
-.rdp-day {
-    @apply h-full w-full p-0;
-}
-.rdp-day_selected {
-    @apply bg-primary text-primary-foreground;
-}
+
 .rdp-day_today {
-    @apply font-bold text-accent;
+  @apply font-bold text-accent-foreground bg-accent;
 }
+
 .rdp-day_outside {
-    @apply text-muted-foreground/50;
+  @apply text-muted-foreground/50;
 }
+
 .rdp-day_disabled {
-    @apply text-muted-foreground/50;
+  @apply text-muted-foreground/50 bg-slate-50;
+}
+
+/* Custom Calendar View Styles */
+.rdp-tbody {
+    display: grid;
+    grid-template-rows: repeat(6, 1fr);
+}
+
+.rdp-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.rdp-cell {
+    @apply border-t first:border-l;
 }
