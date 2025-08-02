@@ -7,18 +7,30 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { getVisitStatus } from '@/lib/utils';
 import { StatusBadge } from './status-badge';
 import type { Client, Visit } from '@/lib/types';
-import { User, Calendar, PlusCircle, History, Briefcase } from 'lucide-react';
+import { User, Calendar, PlusCircle, History, Briefcase, Trash2, AlertTriangle } from 'lucide-react';
 import { VisitLogDialog } from './visit-log-dialog';
 import { VisitHistoryDialog } from './visit-history-dialog';
 import { classificationIntervals } from '@/lib/types';
 import { ptBR } from 'date-fns/locale';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface ClientCardProps {
   client: Client;
   onVisitLogged: (clientId: string, visit: Visit) => void;
+  onDelete: (clientId: string) => void;
 }
 
-export function ClientCard({ client, onVisitLogged }: ClientCardProps) {
+export function ClientCard({ client, onVisitLogged, onDelete }: ClientCardProps) {
   const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   
@@ -51,18 +63,41 @@ export function ClientCard({ client, onVisitLogged }: ClientCardProps) {
             <span>
               Próxima: {client.nextVisitDate ? format(client.nextVisitDate, 'PPP', { locale: ptBR }) : 'N/D'}
             </span>
-
           </div>
         </CardContent>
-        <CardFooter className="flex justify-end gap-2 pt-4">
-          <Button variant="outline" size="sm" onClick={() => setHistoryDialogOpen(true)}>
-            <History className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Histórico</span>
-          </Button>
-          <Button size="sm" onClick={() => setLogDialogOpen(true)}>
-            <PlusCircle className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Registrar Visita</span>
-          </Button>
+        <CardFooter className="flex justify-between items-center pt-4">
+           <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                <Trash2 className="w-4 h-4" />
+                <span className="sr-only">Excluir Cliente</span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação não pode ser desfeita. Isso excluirá permanentemente o cliente e todos os seus dados de visita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(client.id)} className="bg-destructive hover:bg-destructive/90">
+                  Sim, excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setHistoryDialogOpen(true)}>
+              <History className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Histórico</span>
+            </Button>
+            <Button size="sm" onClick={() => setLogDialogOpen(true)}>
+              <PlusCircle className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Registrar</span>
+            </Button>
+          </div>
         </CardFooter>
       </Card>
       
