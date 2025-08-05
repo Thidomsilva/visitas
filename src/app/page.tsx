@@ -25,7 +25,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 
-type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
+type FilterType = "all" | VisitStatus | `class-${ClientClassification}` | "realizadas";
 type ViewType = "dashboard" | "calendar" | "analytics";
 type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
 
@@ -114,7 +114,10 @@ function DashboardPageContent() {
       if (filter.startsWith('class-')) {
         const classification = filter.split('-')[1] as ClientClassification;
         sortedClients = sortedClients.filter(client => client.classification === classification);
-      } else {
+      } else if (filter === 'realizadas') {
+        sortedClients = sortedClients.filter(client => client.visits && client.visits.length > 0);
+      }
+      else {
         sortedClients = sortedClients.filter(client => getVisitStatus(client.nextVisitDate as Date | null) === filter);
       }
     }

@@ -19,9 +19,10 @@ const statusIndicatorConfig = {
   'approaching': 'bg-yellow-500',
   'on-schedule': 'bg-green-500',
   'no-visits': 'bg-gray-400',
+  'realizadas': 'bg-blue-500',
 };
 
-type FilterType = "all" | VisitStatus | `class-${ClientClassification}`;
+type FilterType = "all" | VisitStatus | `class-${ClientClassification}` | "realizadas";
 type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
 
 
@@ -83,12 +84,13 @@ export function ClientList({
           </Select>
         </div>
         <Tabs value={getTabValue()} onValueChange={(val) => onFilterChange(val as FilterType)} className="mt-2">
-            <TabsList className="grid w-full grid-cols-3 h-auto flex-wrap">
+            <TabsList className="grid w-full grid-cols-4 h-auto flex-wrap">
               <TabsTrigger value="all" className="flex-1">Todos</TabsTrigger>
               <TabsTrigger value="on-schedule" className="flex-1">Em Dia</TabsTrigger>
               <TabsTrigger value="approaching" className="flex-1">Próximas</TabsTrigger>
               <TabsTrigger value="overdue" className="flex-1">Atrasadas</TabsTrigger>
               <TabsTrigger value="no-visits" className="flex-1 col-span-2">Sem Visitas</TabsTrigger>
+              <TabsTrigger value="realizadas" className="flex-1 col-span-2">Realizadas</TabsTrigger>
             </TabsList>
         </Tabs>
       </div>
@@ -111,7 +113,7 @@ export function ClientList({
                     {client.isCritical && <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" title="Cliente Crítico"/>}
                     <h3 className="font-semibold truncate">{client.name}</h3>
                   </div>
-                   <span className={cn("w-3 h-3 rounded-full", statusIndicatorConfig[status])} title={`Status: ${status}`}></span>
+                   <span className={cn("w-3 h-3 rounded-full", statusIndicatorConfig[filter === 'realizadas' ? 'realizadas' : status])} title={`Status: ${status}`}></span>
                 </div>
                 <p className={cn(
                   "text-sm mt-1",
@@ -119,6 +121,14 @@ export function ClientList({
                 )}>
                   Próxima visita: {client.nextVisitDate ? formatDistanceToNow(client.nextVisitDate as Date, { addSuffix: true, locale: ptBR }) : 'Não agendada'}
                 </p>
+                 {client.lastVisitDate && (
+                    <p className={cn(
+                      "text-xs mt-1",
+                      selectedClientId === client.id ? "md:text-primary-foreground/80" : "text-muted-foreground"
+                    )}>
+                      Última visita: {formatDistanceToNow(client.lastVisitDate as Date, { addSuffix: true, locale: ptBR })}
+                    </p>
+                  )}
               </button>
             )
           })}
@@ -132,5 +142,3 @@ export function ClientList({
     </div>
   )
 }
-
-    
