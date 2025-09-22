@@ -62,11 +62,7 @@ export function LoginForm() {
         if (error instanceof FirebaseError) {
             switch (error.code) {
                 case 'auth/user-not-found':
-                    description = 'Nenhum usuário encontrado com este e-mail.';
-                    break;
                 case 'auth/wrong-password':
-                    description = 'Senha incorreta. Por favor, tente novamente.';
-                    break;
                 case 'auth/invalid-credential':
                      description = 'Credenciais inválidas. Verifique o e-mail e a senha.';
                     break;
@@ -74,7 +70,7 @@ export function LoginForm() {
                     description = 'O formato do e-mail é inválido.';
                     break;
                 default:
-                    description = `Ocorreu um erro: ${error.message}`;
+                    description = `Ocorreu um erro de autenticação. Tente novamente.`;
             }
         }
       toast({
