@@ -80,8 +80,14 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
                 <div className="flex items-center gap-2 flex-wrap">
                     <CardTitle className="text-2xl flex items-center gap-2">
                       {client.name}
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditNameDialogOpen(true)} title="Editar nome">
-                        <Edit2 className="h-4 w-4" />
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 bg-yellow-400 hover:bg-yellow-500 border border-yellow-700" 
+                        onClick={() => setEditNameDialogOpen(true)} 
+                        title="Editar nome"
+                      >
+                        <Edit2 className="h-4 w-4 text-black" />
                       </Button>
                     </CardTitle>
                     <StatusBadge status={status} />
