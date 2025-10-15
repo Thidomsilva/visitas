@@ -7,7 +7,8 @@ import { ptBR } from 'date-fns/locale';
 import { StatusBadge } from "./status-badge";
 import { getVisitStatus, isBusinessDay } from "@/lib/utils";
 import { Button } from "./ui/button";
-import { PlusCircle, Trash2, AlertTriangle, Calendar as CalendarIcon, History, Pencil } from "lucide-react";
+import { PlusCircle, Trash2, AlertTriangle, Calendar as CalendarIcon, History, Pencil, Edit2 } from "lucide-react";
+import { EditClientNameDialog } from "./edit-client-name-dialog";
 import { VisitHistoryDialog } from "./visit-history-dialog";
 import { useState, useMemo } from "react";
 import { VisitLogDialog } from "./visit-log-dialog";
@@ -18,6 +19,7 @@ import { Calendar } from "./ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Label } from "./ui/label";
 
+
 interface ClientDetailProps {
   client: Client | null;
   onVisitLogged: (clientId: string, visit: Visit) => void;
@@ -25,13 +27,15 @@ interface ClientDetailProps {
   onToggleCriticalStatus: (clientId: string) => void;
   onScheduleMeeting: (clientId: string, date: Date) => void;
   onUpdateClassification: (clientId: string, newClassification: ClientClassification) => void;
+  onUpdateClientName: (clientId: string, newName: string) => void;
 }
 
-export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCriticalStatus, onScheduleMeeting, onUpdateClassification }: ClientDetailProps) {
+export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCriticalStatus, onScheduleMeeting, onUpdateClassification, onUpdateClientName }: ClientDetailProps) {
   const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [schedulePopoverOpen, setSchedulePopoverOpen] = useState(false);
   const [editClassPopoverOpen, setEditClassPopoverOpen] = useState(false);
+  const [editNameDialogOpen, setEditNameDialogOpen] = useState(false);
   
   const status = useMemo(() => client ? getVisitStatus(client.nextVisitDate as Date | null) : 'no-visits', [client]);
   
@@ -74,7 +78,12 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
         <div className="flex flex-col md:flex-row items-start justify-between gap-4">
             <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    <CardTitle className="text-2xl">{client.name}</CardTitle>
+                    <CardTitle className="text-2xl flex items-center gap-2">
+                      {client.name}
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditNameDialogOpen(true)} title="Editar nome">
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    </CardTitle>
                     <StatusBadge status={status} />
                     {client.isCritical && <Badge variant="destructive" className="animate-pulse">CRÍTICO</Badge>}
                 </div>
@@ -219,6 +228,13 @@ export function ClientDetail({ client, onVisitLogged, onDeleteClient, onToggleCr
         onOpenChange={setHistoryDialogOpen}
         clientName={client.name}
         visits={client.visits}
+      />
+
+      <EditClientNameDialog
+        open={editNameDialogOpen}
+        onOpenChange={setEditNameDialogOpen}
+        currentName={client.name}
+        onSave={(newName) => onUpdateClientName(client.id, newName)}
       />
     </Card>
   )

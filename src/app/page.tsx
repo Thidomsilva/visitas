@@ -3,6 +3,14 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp, getDocs, query, writeBatch } from "firebase/firestore";
+  const handleUpdateClientName = async (clientId: string, newName: string) => {
+    const clientRef = doc(db, "clients", clientId);
+    await updateDoc(clientRef, { name: newName });
+    toast({
+      title: "Nome atualizado!",
+      description: `O nome do cliente foi alterado para ${newName}.`
+    });
+  };
 import { db } from "@/lib/firebase";
 import { type Client, type Visit, type VisitStatus, ClientClassification, deserializeClient } from "@/lib/types";
 import { getVisitStatus, calculateNextVisitDate, findNextBusinessDay } from "@/lib/utils";
@@ -295,6 +303,7 @@ function DashboardPageContent() {
             onToggleCriticalStatus={handleToggleCriticalStatus}
             onScheduleMeeting={handleScheduleMeeting}
             onUpdateClassification={handleUpdateClassification}
+            onUpdateClientName={handleUpdateClientName}
           />
         </main>
       );
