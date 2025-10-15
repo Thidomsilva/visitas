@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+
+// Garantir importação explícita para JSX funcionar em todos os ambientes
+// (mesmo que já esteja importado acima, reforçamos para build antigos)
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Input } from "./ui/input";
