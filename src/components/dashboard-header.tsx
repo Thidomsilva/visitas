@@ -45,7 +45,7 @@ export function DashboardHeader({ onAddClient, view, onViewChange, onSeedDatabas
               <PlusCircle className="mr-0 md:mr-2 h-4 w-4" />
               <span className="hidden md:inline">Adicionar Cliente</span>
             </Button>
-            <DropdownMenu>
+      <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon">
                         <Settings className="h-4 w-4" />
@@ -54,7 +54,12 @@ export function DashboardHeader({ onAddClient, view, onViewChange, onSeedDatabas
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Configurações</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                     <DropdownMenuItem onClick={logout}>
+          <DropdownMenuItem onClick={() => { if (confirm('Tem certeza que deseja zerar as visitas para todos os clientes? Essa ação não pode ser desfeita.')) onSeedDatabase(); }}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Zerar Visitas</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={logout}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Sair</span>
                     </DropdownMenuItem>

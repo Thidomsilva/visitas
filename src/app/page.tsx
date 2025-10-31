@@ -40,7 +40,7 @@ type UnitFilterType = 'all' | 'LONDRINA' | 'CURITIBA';
 function DashboardSkeleton() {
   return (
      <div className="min-h-screen bg-background flex flex-col">
-      <DashboardHeader onAddClient={() => {}} onViewChange={() => {}} />
+  <DashboardHeader onAddClient={() => {}} onViewChange={() => {}} onSeedDatabase={() => {}} isSeeding={false} />
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         <div className="w-full md:w-80 border-b md:border-b-0 md:border-r p-4 space-y-4">
           <Skeleton className="h-10 w-full" />
@@ -96,6 +96,35 @@ function DashboardPageContent() {
     });
     return () => unsubscribe();
   }, [toast, isLoading]);
+
+  const [isResettingVisits, setIsResettingVisits] = useState(false);
+
+  const handleResetVisits = async () => {
+    if (!confirm('Zerar visitas para TODOS os clientes? Isso irá limpar o histórico de visitas e definir a última visita como hoje.')) return;
+    setIsResettingVisits(true);
+    try {
+      const batch = writeBatch(db);
+      const today = findNextBusinessDay(new Date());
+
+      clients.forEach(client => {
+        const clientRef = doc(db, 'clients', client.id);
+        const nextVisit = calculateNextVisitDate(today, client.classification, !!client.isCritical);
+        batch.update(clientRef, {
+          visits: [],
+          lastVisitDate: Timestamp.fromDate(today),
+          nextVisitDate: Timestamp.fromDate(nextVisit),
+        });
+      });
+
+      await batch.commit();
+      toast({ title: 'Visitas zeradas', description: 'Todos os clientes foram atualizados a partir de hoje.' });
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Erro', description: 'Não foi possível zerar as visitas.', variant: 'destructive' });
+    } finally {
+      setIsResettingVisits(false);
+    }
+  };
 
 
   const clientsForStats = useMemo(() => {
@@ -447,11 +476,13 @@ function DashboardPageContent() {
   return (
     <>
       <div className="min-h-screen bg-background flex flex-col">
-        <DashboardHeader 
-            onAddClient={() => setAddClientOpen(true)}
-            view={view}
-            onViewChange={setView}
-        />
+    <DashboardHeader 
+      onAddClient={() => setAddClientOpen(true)}
+      view={view}
+      onViewChange={setView}
+      onSeedDatabase={handleResetVisits}
+      isSeeding={isResettingVisits}
+    />
         {renderView()}
       </div>
       <AddClientDialog 
